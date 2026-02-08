@@ -62,12 +62,13 @@ func getRepositoryAddHelp() string {
 		Item(yellow("<name>"), "Name to identify this repository (required)").
 		Item(yellow("<repository-url>"), "Git repository URL - HTTPS or SSH format (required)").
 		Section("FLAGS:").
-		Item("-f, --force", "Overwrite existing repository with same name").
+		Item("-f, --force", "Overwrite existing repository or allow duplicate URLs").
 		Item("--skip-verify", "Skip repository verification (not recommended)").
 		Item("--set-current", "Set this repository as the active one").
 		Section("BEHAVIOR:").
 		BulletList([]string{
-			"Validates repository URL format",
+			"Validates repository name and URL format",
+			"Checks for duplicate repository URLs (prevents same repo with different names)",
 			"Verifies repository access (unless --skip-verify)",
 			"Clones to ~/.local/share/skill/repos/<name>",
 			"Saves configuration to ~/.config/skill/config.yaml",
@@ -221,11 +222,31 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 		}
 		isNewConfig = false
 
-		// Check if repository already exists
+		// Check if repository name already exists
 		if _, err := config.GetRepo(cfg, repoName); err == nil && !forceRepo {
 			fmt.Printf("%s Repository '%s' already exists\n", red("✗"), repoName)
 			fmt.Println("  Use --force to overwrite")
 			return errors.ErrRepoAlreadyExists
+		}
+
+		// Check if repository URL already exists (duplicate validation)
+		if existingRepo, found := config.FindRepoByURL(cfg, repoURL); found && !forceRepo {
+			fmt.Printf("%s Repository URL already exists\n", red("✗"))
+			fmt.Printf("  URL: %s\n", repoURL)
+			fmt.Printf("  Existing name: %s\n", existingRepo.Name)
+			fmt.Println()
+			fmt.Println("This repository is already configured. You can:")
+			fmt.Printf("  - Use the existing repository: skill repository set-current %s\n", existingRepo.Name)
+			fmt.Printf("  - Remove and re-add: skill repository remove %s\n", existingRepo.Name)
+			fmt.Println("  - Use --force to add anyway (creates duplicate)")
+			return fmt.Errorf("duplicate repository URL")
+		}
+
+		// Warning if forcing duplicate URL
+		if existingRepo, found := config.FindRepoByURL(cfg, repoURL); found && forceRepo {
+			fmt.Printf("%s Adding duplicate repository URL (--force)\n", yellow("⚠"))
+			fmt.Printf("  Existing repository '%s' uses the same URL\n", existingRepo.Name)
+			fmt.Println()
 		}
 	} else {
 		cfg = &config.Config{

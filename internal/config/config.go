@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/xdg"
 	"github.com/spf13/viper"
@@ -322,4 +323,58 @@ func ValidateRepoName(name string) error {
 	}
 
 	return nil
+}
+
+// NormalizeGitURL normalizes a Git URL for comparison purposes
+// This handles:
+// - Removing .git suffix
+// - Converting SSH to HTTPS format
+// - Lowercasing for case-insensitive comparison
+func NormalizeGitURL(url string) string {
+	normalized := strings.TrimSpace(url)
+
+	// Remove .git suffix if present
+	normalized = strings.TrimSuffix(normalized, ".git")
+
+	// Convert SSH format to HTTPS format for comparison
+	// git@github.com:org/repo -> https://github.com/org/repo
+	if strings.HasPrefix(normalized, "git@github.com:") {
+		normalized = strings.Replace(normalized, "git@github.com:", "https://github.com/", 1)
+	}
+
+	// Handle ssh://git@github.com/org/repo format
+	if strings.HasPrefix(normalized, "ssh://git@github.com/") {
+		normalized = strings.Replace(normalized, "ssh://git@github.com/", "https://github.com/", 1)
+	}
+
+	// Generic SSH URL pattern: git@host:org/repo -> https://host/org/repo
+	if strings.HasPrefix(normalized, "git@") && strings.Contains(normalized, ":") {
+		parts := strings.SplitN(normalized, ":", 2)
+		if len(parts) == 2 {
+			host := strings.TrimPrefix(parts[0], "git@")
+			normalized = fmt.Sprintf("https://%s/%s", host, parts[1])
+		}
+	}
+
+	// Lowercase for case-insensitive comparison
+	return strings.ToLower(normalized)
+}
+
+// FindRepoByURL searches for a repository by its URL (normalized)
+// Returns the repository and true if found, nil and false otherwise
+func FindRepoByURL(cfg *Config, url string) (*Repository, bool) {
+	if cfg == nil || cfg.Repositories == nil {
+		return nil, false
+	}
+
+	normalizedURL := NormalizeGitURL(url)
+
+	for _, repo := range cfg.Repositories {
+		if NormalizeGitURL(repo.URL) == normalizedURL {
+			repoCopy := repo
+			return &repoCopy, true
+		}
+	}
+
+	return nil, false
 }
