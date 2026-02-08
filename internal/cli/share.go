@@ -168,14 +168,14 @@ func runShare(cmd *cobra.Command, args []string) error {
 	fmt.Printf("%s gh CLI is available\n", green("✓"))
 	fmt.Println()
 
-	// Step 4: Fork the repository
-	fmt.Printf("%s Forking repository...\n", cyan("→"))
+	// Step 4: Check for existing fork or create new one
+	fmt.Printf("%s Checking for existing fork or creating new one...\n", cyan("→"))
 	forkURL, err := forkRepository(targetRepo)
 	if err != nil {
-		fmt.Printf("%s Error forking repository: %v\n", red("✗"), err)
+		fmt.Printf("%s Error: %v\n", red("✗"), err)
 		return err
 	}
-	fmt.Printf("%s Repository forked: %s\n", green("✓"), forkURL)
+	fmt.Printf("%s Fork ready: %s\n", green("✓"), forkURL)
 	fmt.Println()
 
 	// Step 5: Clone the fork to a temporary directory
@@ -289,6 +289,49 @@ func checkGHInstalled() error {
 	return nil
 }
 
+// checkForkExists checks if the user already has a fork of the repository
+func checkForkExists(owner, repo string) (bool, string, error) {
+	// Get current user
+	userCmd := exec.Command("gh", "api", "user", "--jq", ".login")
+	userOutput, err := userCmd.Output()
+	if err != nil {
+		return false, "", fmt.Errorf("error getting current user: %w", err)
+	}
+	currentUser := strings.TrimSpace(string(userOutput))
+
+	// Check if fork exists using gh API
+	// gh api repos/{owner}/{repo}/forks --jq '.[] | select(.owner.login == "username") | .html_url'
+	checkCmd := exec.Command("gh", "api", fmt.Sprintf("repos/%s/%s/forks", owner, repo),
+		"--jq", fmt.Sprintf(".[] | select(.owner.login == \"%s\") | .clone_url", currentUser))
+
+	output, err := checkCmd.Output()
+	if err != nil {
+		// If error, assume fork doesn't exist
+		return false, "", nil
+	}
+
+	forkURL := strings.TrimSpace(string(output))
+	if forkURL != "" {
+		return true, forkURL, nil
+	}
+
+	return false, "", nil
+}
+
+// checkIsOwner checks if the current user is the owner of the repository
+func checkIsOwner(owner, repo string) (bool, error) {
+	// Get current user
+	userCmd := exec.Command("gh", "api", "user", "--jq", ".login")
+	userOutput, err := userCmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("error getting current user: %w", err)
+	}
+	currentUser := strings.TrimSpace(string(userOutput))
+
+	// Compare owner with current user
+	return strings.EqualFold(owner, currentUser), nil
+}
+
 // forkRepository forks a repository and returns the fork URL
 func forkRepository(repoURL string) (string, error) {
 	// Extract owner/repo from URL
@@ -297,14 +340,42 @@ func forkRepository(repoURL string) (string, error) {
 		return "", err
 	}
 
+	// Check if user is already the owner
+	isOwner, err := checkIsOwner(owner, repo)
+	if err != nil {
+		return "", fmt.Errorf("error checking repository ownership: %w", err)
+	}
+
+	if isOwner {
+		cyan := color.New(color.FgCyan).SprintFunc()
+		fmt.Printf("%s You are the owner of this repository, using it directly\n", cyan("ℹ"))
+		fmt.Printf("  Repository URL: %s\n", repoURL)
+		return repoURL, nil
+	}
+
+	// Check if fork already exists
+	exists, existingForkURL, err := checkForkExists(owner, repo)
+	if err != nil {
+		return "", fmt.Errorf("error checking for existing fork: %w", err)
+	}
+
+	if exists {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Printf("%s Fork already exists, using existing fork\n", yellow("ℹ"))
+		fmt.Printf("  Fork URL: %s\n", existingForkURL)
+		return existingForkURL, nil
+	}
+
 	// Fork using gh CLI
+	green := color.New(color.FgGreen).SprintFunc()
+	fmt.Printf("%s Creating new fork...\n", green("→"))
+
 	cmd := exec.Command("gh", "repo", "fork", fmt.Sprintf("%s/%s", owner, repo), "--clone=false")
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		// Check if already forked
+		// Check if already forked (backup check)
 		if strings.Contains(string(output), "already exists") {
-			// Get the current user
 			userCmd := exec.Command("gh", "api", "user", "--jq", ".login")
 			userOutput, userErr := userCmd.Output()
 			if userErr != nil {
@@ -320,7 +391,6 @@ func forkRepository(repoURL string) (string, error) {
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, "github.com") {
-			// Extract URL
 			parts := strings.Fields(line)
 			for _, part := range parts {
 				if strings.Contains(part, "github.com") {
