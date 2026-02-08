@@ -20,6 +20,28 @@ var (
 	keepLocal  bool
 )
 
+// formatError formats an error message with red color
+// Usage: fmt.Println(formatError("Error: %s", err))
+func formatError(format string, args ...interface{}) string {
+	red := color.New(color.FgRed).SprintFunc()
+	msg := fmt.Sprintf(format, args...)
+	return red(msg)
+}
+
+// formatSuccess formats a success message with green color
+func formatSuccess(format string, args ...interface{}) string {
+	green := color.New(color.FgGreen).SprintFunc()
+	msg := fmt.Sprintf(format, args...)
+	return green(msg)
+}
+
+// formatWarning formats a warning message with yellow color
+func formatWarning(format string, args ...interface{}) string {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	msg := fmt.Sprintf(format, args...)
+	return yellow(msg)
+}
+
 // getRepositoryHelp returns colored help text for repository command
 func getRepositoryHelp() string {
 	yellow := color.New(color.FgYellow).SprintFunc()
@@ -205,7 +227,7 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 
 	// 1. Validate repository name
 	if err := config.ValidateRepoName(repoName); err != nil {
-		fmt.Printf("%s %v\n", red("✗"), err)
+		fmt.Printf("%s %s\n", red("✗"), formatError("%v", err))
 		return err
 	}
 
@@ -217,25 +239,25 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 		var err error
 		cfg, err = config.Load()
 		if err != nil {
-			fmt.Printf("%s Error loading configuration: %v\n", red("✗"), err)
+			fmt.Printf("%s %s\n", red("✗"), formatError("Error loading configuration: %v", err))
 			return err
 		}
 		isNewConfig = false
 
 		// Check if repository name already exists
 		if _, err := config.GetRepo(cfg, repoName); err == nil && !forceRepo {
-			fmt.Printf("%s Repository '%s' already exists\n", red("✗"), repoName)
+			fmt.Printf("%s %s\n", red("✗"), formatError("Repository '%s' already exists", repoName))
 			fmt.Println("  Use --force to overwrite")
 			return errors.ErrRepoAlreadyExists
 		}
 
 		// Check if repository URL already exists (duplicate validation)
 		if existingRepo, found := config.FindRepoByURL(cfg, repoURL); found && !forceRepo {
-			fmt.Printf("%s Repository URL already exists\n", red("✗"))
-			fmt.Printf("  URL: %s\n", repoURL)
-			fmt.Printf("  Existing name: %s\n", existingRepo.Name)
+			fmt.Printf("%s %s\n", red("✗"), formatError("Repository URL already exists"))
+			fmt.Printf("  %s\n", formatError("URL: %s", repoURL))
+			fmt.Printf("  %s\n", formatError("Existing name: %s", existingRepo.Name))
 			fmt.Println()
-			fmt.Println("This repository is already configured. You can:")
+			fmt.Println(formatError("This repository is already configured. You can:"))
 			fmt.Printf("  - Use the existing repository: skill repository set-current %s\n", existingRepo.Name)
 			fmt.Printf("  - Remove and re-add: skill repository remove %s\n", existingRepo.Name)
 			fmt.Println("  - Use --force to add anyway (creates duplicate)")
@@ -244,8 +266,8 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 
 		// Warning if forcing duplicate URL
 		if existingRepo, found := config.FindRepoByURL(cfg, repoURL); found && forceRepo {
-			fmt.Printf("%s Adding duplicate repository URL (--force)\n", yellow("⚠"))
-			fmt.Printf("  Existing repository '%s' uses the same URL\n", existingRepo.Name)
+			fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Adding duplicate repository URL (--force)"))
+			fmt.Printf("  %s\n", formatWarning("Existing repository '%s' uses the same URL", existingRepo.Name))
 			fmt.Println()
 		}
 	} else {
@@ -259,7 +281,7 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	// 3. Validate URL format
 	fmt.Printf("Validating repository URL...\n")
 	if err := git.ValidateURL(repoURL); err != nil {
-		fmt.Printf("%s %v\n", red("✗"), err)
+		fmt.Printf("%s %s\n", red("✗"), formatError("%v", err))
 		fmt.Println("\nValid formats:")
 		fmt.Println("  - https://github.com/org/repo.git")
 		fmt.Println("  - git@github.com:org/repo.git")
@@ -276,7 +298,7 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	if !skipVerify {
 		fmt.Printf("Verifying repository access...\n")
 		if err := git.VerifyBasic(repoURL); err != nil {
-			fmt.Printf("%s %v\n", red("✗"), err)
+			fmt.Printf("%s %s\n", red("✗"), formatError("%v", err))
 
 			// Help messages based on error
 			if errors.IsAuthenticationFailed(err) {
@@ -302,7 +324,7 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Printf("%s Repository accessible\n", green("✓"))
 	} else {
-		fmt.Printf("%s Verification skipped (--skip-verify)\n", yellow("⚠"))
+		fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Verification skipped (--skip-verify)"))
 	}
 
 	// 6. Get local path for repository
@@ -312,7 +334,7 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	if git.RepoExists(repoPath) && forceRepo {
 		fmt.Printf("Removing previous local repository...\n")
 		if err := os.RemoveAll(repoPath); err != nil {
-			fmt.Printf("%s Error removing previous repository: %v\n", red("✗"), err)
+			fmt.Printf("%s %s\n", red("✗"), formatError("Error removing previous repository: %v", err))
 			return err
 		}
 	}
@@ -321,7 +343,7 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	if !git.RepoExists(repoPath) {
 		fmt.Printf("Cloning repository to %s...\n", repoPath)
 		if err := git.Clone(repoURL, repoPath); err != nil {
-			fmt.Printf("%s Error cloning repository: %v\n", red("✗"), err)
+			fmt.Printf("%s %s\n", red("✗"), formatError("Error cloning repository: %v", err))
 			return err
 		}
 		fmt.Printf("%s Repository cloned successfully\n", green("✓"))
@@ -345,28 +367,28 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 
 	// Add the repository
 	if err := config.AddRepository(cfg, repo); err != nil {
-		fmt.Printf("%s Error adding repository: %v\n", red("✗"), err)
+		fmt.Printf("%s %s\n", red("✗"), formatError("Error adding repository: %v", err))
 		return err
 	}
 
 	// If --set-current, change the active one
 	if setCurrent {
 		if err := config.SetActiveRepo(cfg, repoName); err != nil {
-			fmt.Printf("%s Error setting active repository: %v\n", red("✗"), err)
+			fmt.Printf("%s %s\n", red("✗"), formatError("Error setting active repository: %v", err))
 			return err
 		}
 	}
 
 	// 10. Validate configuration
 	if err := config.Validate(cfg); err != nil {
-		fmt.Printf("%s Invalid configuration: %v\n", red("✗"), err)
+		fmt.Printf("%s %s\n", red("✗"), formatError("Invalid configuration: %v", err))
 		return err
 	}
 
 	// 11. Save configuration
 	fmt.Printf("Saving configuration...\n")
 	if err := config.Save(cfg); err != nil {
-		fmt.Printf("%s Error saving configuration: %v\n", red("✗"), err)
+		fmt.Printf("%s %s\n", red("✗"), formatError("Error saving configuration: %v", err))
 		return err
 	}
 
