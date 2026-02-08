@@ -48,6 +48,7 @@ a configured remote repository.
 
   %s                %s
   %s %s
+  %s %s
 
   %s              %s
   %s                     %s
@@ -58,6 +59,7 @@ a configured remote repository.
   %s        %s
 
 %s
+  %s
   %s
   %s
   %s
@@ -84,6 +86,7 @@ a configured remote repository.
 
 		yellow("list [flags]"), dim("List available or installed skills"),
 		yellow("install <skill-name> [flags]"), dim("Install a skill to a provider"),
+		yellow("share --path <path> [flags]"), dim("Share a skill via PR"),
 
 		yellow("help [command]"), dim("Show help for any command"),
 		yellow("version"), dim("Show version information"),
@@ -97,6 +100,7 @@ a configured remote repository.
 		green("skill repository add myrepo https://github.com/org/skills.git"),
 		green("skill list"),
 		green("skill install explain-code --provider claude"),
+		green("skill share --path ./my-skill"),
 		green("skill config show"),
 
 		dim("Use \"skill [command] --help\" for more information about a command."),
@@ -128,6 +132,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(installCmd)
+	rootCmd.AddCommand(shareCmd)
 }
 
 // initConfig reads the configuration
