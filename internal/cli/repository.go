@@ -75,53 +75,31 @@ var repositoryCmd = &cobra.Command{
 
 // getRepositoryAddHelp returns colored help text
 func getRepositoryAddHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s              %s
-  %s    %s
-
-%s
-  %s         %s
-  %s       %s
-  %s       %s
-
-%s
-  - Validates repository URL format
-  - Verifies repository access (unless --skip-verify)
-  - Clones to ~/.local/share/skill/repos/<name>
-  - Saves configuration to ~/.config/skill/config.yaml
-  - First repository added automatically becomes active
-
-%s
-  %s
-  %s
-  %s
-  %s`,
-		"Add a new Git repository where skills are stored.",
-
-		cyan("PARAMETERS:"),
-		yellow("<name>"), dim("Name to identify this repository (required)"),
-		yellow("<repository-url>"), dim("Git repository URL - HTTPS or SSH format (required)"),
-
-		cyan("FLAGS:"),
-		green("-f, --force"), dim("Overwrite existing repository with same name"),
-		green("--skip-verify"), dim("Skip repository verification (not recommended)"),
-		green("--set-current"), dim("Set this repository as the active one"),
-
-		cyan("BEHAVIOR:"),
-
-		cyan("EXAMPLES:"),
-		green("skill repository add myrepo https://github.com/org/skills-repo.git"),
-		green("skill repository add company git@github.com:company/internal-skills.git"),
-		green("skill repository add myrepo https://github.com/org/skills-repo.git --force"),
-		green("skill repository add secondary https://github.com/org/another.git --set-current"),
-	)
+	return NewHelpBuilder().
+		Description("Add a new Git repository where skills are stored.").
+		Section("PARAMETERS:").
+		Item(yellow("<name>"), "Name to identify this repository (required)").
+		Item(yellow("<repository-url>"), "Git repository URL - HTTPS or SSH format (required)").
+		Section("FLAGS:").
+		Item("-f, --force", "Overwrite existing repository with same name").
+		Item("--skip-verify", "Skip repository verification (not recommended)").
+		Item("--set-current", "Set this repository as the active one").
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Validates repository URL format",
+			"Verifies repository access (unless --skip-verify)",
+			"Clones to ~/.local/share/skill/repos/<name>",
+			"Saves configuration to ~/.config/skill/config.yaml",
+			"First repository added automatically becomes active",
+		}).
+		Section("EXAMPLES:").
+		Example("skill repository add myrepo https://github.com/org/skills-repo.git", "").
+		Example("skill repository add company git@github.com:company/internal-skills.git", "").
+		Example("skill repository add myrepo https://github.com/org/skills-repo.git --force", "").
+		Example("skill repository add secondary https://github.com/org/another.git --set-current", "").
+		Build()
 }
 
 // repositoryAddCmd adds a new repository
@@ -183,29 +161,21 @@ var repositoryRemoveCmd = &cobra.Command{
 
 // getRepositoryListHelp returns colored help text
 func getRepositoryListHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-
-	return fmt.Sprintf(`%s
-
-%s
-  - Repository name
-  - URL (HTTPS or SSH)
-  - Local path
-  - Authentication type
-  - Last verification time
-  - Clone status
-  - Active repository indicator (*)
-
-%s
-  %s`,
-		"Shows all configured repositories with basic information.",
-
-		cyan("OUTPUT INCLUDES:"),
-
-		cyan("EXAMPLE:"),
-		green("skill repository list"),
-	)
+	return NewHelpBuilder().
+		Description("Shows all configured repositories with basic information.").
+		Section("OUTPUT INCLUDES:").
+		BulletList([]string{
+			"Repository name",
+			"URL (HTTPS or SSH)",
+			"Local path",
+			"Authentication type",
+			"Last verification time",
+			"Clone status",
+			"Active repository indicator (*)",
+		}).
+		Section("EXAMPLE:").
+		Example("skill repository list", "").
+		Build()
 }
 
 // repositoryListCmd lists all repositories
@@ -218,35 +188,22 @@ var repositoryListCmd = &cobra.Command{
 
 // getRepositorySetCurrentHelp returns colored help text
 func getRepositorySetCurrentHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s              %s
-
-%s
-  - Sets the specified repository as the active one
-  - Commands like 'skill list' and 'skill install' use the active repo by default
-  - The repository must already be added to configuration
-
-%s
-  %s
-  %s`,
-		"Change the active repository.",
-
-		cyan("PARAMETERS:"),
-		yellow("<name>"), dim("Name of the repository to set as active (required)"),
-
-		cyan("BEHAVIOR:"),
-
-		cyan("EXAMPLES:"),
-		green("skill repository set-current myrepo"),
-		green("skill repository set-current company"),
-	)
+	return NewHelpBuilder().
+		Description("Change the active repository.").
+		Section("PARAMETERS:").
+		Item(yellow("<name>"), "Name of the repository to set as active (required)").
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Sets the specified repository as the active one",
+			"Commands like 'skill list' and 'skill install' use the active repo by default",
+			"The repository must already be added to configuration",
+		}).
+		Section("EXAMPLES:").
+		Example("skill repository set-current myrepo", "").
+		Example("skill repository set-current company", "").
+		Build()
 }
 
 // repositorySetCurrentCmd sets the active repository
