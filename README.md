@@ -4,16 +4,24 @@ Skills manager from Git repositories.
 
 ## Description
 
-`skill` is a command-line tool written in Go that allows you to manage "skills" stored in Git repositories. Skills are structured as individual directories with multiple files (config.yaml, scripts, README.md, etc.) and are stored in a shared Git repository.
+`skill` is a command-line tool written in Go that allows you to manage "skills" stored in Git repositories. Skills are reusable code snippets, scripts, and documentation organized in a standardized directory structure with a `SKILL.md` file containing metadata and instructions.
+
+Each skill is a self-contained directory with:
+- **SKILL.md**: Documentation and metadata (required)
+- **scripts/**: Executable code (optional)
+- **references/**: Additional documentation (optional)
+- **assets/**: Templates and resources (optional)
 
 ## Features
 
-- Initialization with remote Git repository (HTTPS or SSH)
-- Automatic repository access verification
-- XDG Base Directory Specification compliant configuration
-- Local cloning of skills repository
-- Configuration management with simple commands
-- Colored output for better user experience
+- 📦 **Multiple repositories**: Manage skills from different Git repositories
+- 🔍 **Automatic discovery**: Scans repositories for skills (any directory with `SKILL.md`)
+- 🚀 **Easy installation**: Install skills to Claude Desktop or Cursor with one command
+- 🤝 **Sharing**: Fork repositories and create PRs to contribute skills
+- 🔐 **Flexible authentication**: Supports both HTTPS and SSH for Git operations
+- ✅ **Validation**: Automatically validates skill structure before sharing
+- 🎨 **Colored output**: Beautiful terminal UI for better user experience
+- ⚙️ **XDG compliant**: Configuration follows XDG Base Directory Specification
 
 ## Installation
 
@@ -105,18 +113,68 @@ repository:
 
 ### Skills repository structure
 
+Skills are stored as individual directories in the root of the repository. Each skill must follow this structure:
+
+#### Required Structure
+
+```
+my-skill/
+├── SKILL.md          # Required: Skill documentation with frontmatter metadata
+├── scripts/          # Optional: Executable code (bash, python, etc.)
+├── references/       # Optional: Additional documentation, guides
+└── assets/           # Optional: Templates, resources, configuration files
+```
+
+#### SKILL.md Format
+
+The `SKILL.md` file must start with YAML frontmatter containing metadata:
+
+```markdown
+---
+name: my-skill
+description: Brief description of what this skill does
+version: 1.0.0
+---
+
+# My Skill
+
+Detailed instructions and documentation for the skill.
+
+## Usage
+
+How to use this skill...
+
+## Examples
+
+Examples of using the skill...
+```
+
+#### Complete Repository Example
+
 ```
 skills-repo/
-└── skills/
-    ├── my-skill/
-    │   ├── config.yaml
-    │   ├── script.sh
-    │   └── README.md
-    └── another-skill/
-        ├── config.yaml
-        ├── script.py
-        └── README.md
+├── deploy-app/
+│   ├── SKILL.md              # Deployment skill documentation
+│   ├── scripts/
+│   │   ├── deploy.sh         # Deployment script
+│   │   └── rollback.sh       # Rollback script
+│   ├── references/
+│   │   └── deployment-guide.md
+│   └── assets/
+│       └── config.template.yml
+├── explain-code/
+│   ├── SKILL.md              # Code explanation skill
+│   └── references/
+│       └── examples.md
+└── code-review/
+    ├── SKILL.md              # Code review skill
+    ├── scripts/
+    │   └── check-style.py
+    └── assets/
+        └── review-checklist.md
 ```
+
+**Note:** The CLI automatically discovers any directory containing a `SKILL.md` file as a skill. Directories without `SKILL.md` are ignored.
 
 ## Available Commands
 
@@ -136,6 +194,8 @@ skills-repo/
 
 ### Share a skill
 
+The `share` command allows you to contribute skills to a repository by automatically forking, branching, and creating a pull request.
+
 ```bash
 # Share a skill to the current active repository
 skill share --path ./my-skill
@@ -147,18 +207,40 @@ skill share --path ./my-skill --repo https://github.com/org/skills-repo.git
 skill share --path ~/skills/deploy-app --repo git@github.com:org/skills.git
 ```
 
+#### How it works
+
 The share command:
-1. Validates the skill structure (requires SKILL.md)
-2. Forks the target repository
-3. Creates a new branch
-4. Copies the skill folder
-5. Commits and pushes changes
-6. Creates a pull request
-7. Returns the PR URL
+1. **Validates** the skill structure (requires `SKILL.md`)
+2. **Warns** if optional directories (`scripts/`, `references/`, `assets/`) are missing
+3. **Forks** the target repository using `gh` CLI
+4. **Creates** a new branch (`add-skill-<name>`)
+5. **Copies** the skill folder to the repository
+6. **Commits** and pushes changes
+7. **Creates** a pull request against main
+8. **Returns** the PR URL
+
+#### Skill structure validation
+
+Your skill directory must contain:
+- ✅ **Required**: `SKILL.md` with frontmatter metadata (see [Skills repository structure](#skills-repository-structure))
+- ⚠️ **Optional**: `scripts/`, `references/`, `assets/` directories (warnings shown if missing)
+
+Example of a valid skill:
+```
+my-skill/
+├── SKILL.md          # Required
+├── scripts/          # Optional but recommended
+│   └── setup.sh
+├── references/       # Optional
+│   └── guide.md
+└── assets/           # Optional
+    └── template.yml
+```
 
 **Requirements:**
-- `gh` CLI must be installed and authenticated
-- Skill must have a valid structure with SKILL.md file
+- `gh` CLI must be installed and authenticated (`gh auth login`)
+- You must have permissions to fork the target repository
+- Your skill must have a valid `SKILL.md` file with proper frontmatter
 
 ### Coming Soon
 
