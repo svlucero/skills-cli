@@ -16,95 +16,52 @@ var (
 
 // getColoredHelp returns the colored help text for the root command
 func getColoredHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	white := color.New(color.FgWhite).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-Skills are structured as individual directories with multiple files
-(config.yaml, scripts, README.md, etc.) and are stored in a shared Git repository.
-
-This CLI allows you to initialize, install, list and manage skills from
-a configured remote repository.
-
-%s
-  %s
-  %s
-
-%s
-  %s              %s
-    %s            %s
-    %s               %s
-    %s                        %s
-    %s          %s
-
-  %s                %s
-    %s                        %s
-    %s              %s
-    %s                      %s
-
-  %s                %s
-  %s %s
-  %s %s
-
-  %s              %s
-  %s                     %s
-
-%s
-  %s   %s
-  %s     %s
-  %s        %s
-
-%s
-  %s
-  %s
-  %s
-  %s
-  %s
-
-%s`,
-		white("skill is a CLI for managing skills stored in Git repositories."),
-
-		cyan("USAGE:"),
-		green("skill [command] [flags]"),
-		green("skill [command] [subcommand] [arguments] [flags]"),
-
-		cyan("AVAILABLE COMMANDS:"),
-		yellow("repository <subcommand>"), dim("Manage skill repositories"),
-		green("add <name> <url>"), dim("Add a new repository"),
-		green("remove <name>"), dim("Remove a repository"),
-		green("list"), dim("List all repositories"),
-		green("set-current <name>"), dim("Set active repository"),
-
-		yellow("config <subcommand>"), dim("Manage CLI configuration"),
-		green("show"), dim("Show current configuration"),
-		green("set-repo <url>"), dim("Change repository URL"),
-		green("verify"), dim("Verify repository access"),
-
-		yellow("list [flags]"), dim("List available or installed skills"),
-		yellow("install <skill-name> [flags]"), dim("Install a skill to a provider"),
-		yellow("share --path <path> [flags]"), dim("Share a skill via PR"),
-
-		yellow("help [command]"), dim("Show help for any command"),
-		yellow("version"), dim("Show version information"),
-
-		cyan("GLOBAL FLAGS:"),
-		green("--config string"), dim("Configuration file (default: ~/.config/skill/config.yaml)"),
-		green("-v, --verbose"), dim("Detailed output"),
-		green("-h, --help"), dim("Show help for command"),
-
-		cyan("EXAMPLES:"),
-		green("skill repository add myrepo https://github.com/org/skills.git"),
-		green("skill list"),
-		green("skill install explain-code --provider claude"),
-		green("skill share --path ./my-skill"),
-		green("skill config show"),
-
-		dim("Use \"skill [command] --help\" for more information about a command."),
-	)
+	return NewHelpBuilder().
+		Text(white("skill is a CLI for managing skills stored in Git repositories.")).
+		EmptyLine().
+		Text("Skills are structured as individual directories with multiple files").
+		Text("(config.yaml, scripts, README.md, etc.) and are stored in a shared Git repository.").
+		EmptyLine().
+		Text("This CLI allows you to initialize, install, list and manage skills from").
+		Text("a configured remote repository.").
+		Section("USAGE:").
+		Example("skill [command] [flags]", "").
+		Example("skill [command] [subcommand] [arguments] [flags]", "").
+		Section("AVAILABLE COMMANDS:").
+		Item(yellow("repository <subcommand>"), "Manage skill repositories").
+		SubItem("add <name> <url>", "Add a new repository").
+		SubItem("remove <name>", "Remove a repository").
+		SubItem("list", "List all repositories").
+		SubItem("set-current <name>", "Set active repository").
+		EmptyLine().
+		Item(yellow("config <subcommand>"), "Manage CLI configuration").
+		SubItem("show", "Show current configuration").
+		SubItem("set-repo <url>", "Change repository URL").
+		SubItem("verify", "Verify repository access").
+		EmptyLine().
+		Item(yellow("list [flags]"), "List available or installed skills").
+		Item(yellow("install <skill-name> [flags]"), "Install a skill to a provider").
+		Item(yellow("share --path <path> [flags]"), "Share a skill via PR").
+		EmptyLine().
+		Item(yellow("help [command]"), "Show help for any command").
+		Item(yellow("version"), "Show version information").
+		Section("GLOBAL FLAGS:").
+		Item("--config string", "Configuration file (default: ~/.config/skill/config.yaml)").
+		Item("-v, --verbose", "Detailed output").
+		Item("-h, --help", "Show help for command").
+		Section("EXAMPLES:").
+		Example("skill repository add myrepo https://github.com/org/skills.git", "").
+		Example("skill list", "").
+		Example("skill install explain-code --provider claude", "").
+		Example("skill share --path ./my-skill", "").
+		Example("skill config show", "").
+		EmptyLine().
+		Text(dim("Use \"skill [command] --help\" for more information about a command.")).
+		Build()
 }
 
 // rootCmd represents the base command when called without subcommands
