@@ -128,8 +128,37 @@ skills-repo/
 | `skill config show` | Show current configuration |
 | `skill config set-repo <url>` | Change configured repository |
 | `skill config verify` | Verify repository access |
+| `skill list` | List available or installed skills |
+| `skill install <name>` | Install a skill to a provider (Claude, Cursor) |
+| `skill share --path <path>` | Share a skill by forking and creating a PR |
 | `skill --help` | Show general help |
 | `skill --version` | Show CLI version |
+
+### Share a skill
+
+```bash
+# Share a skill to the current active repository
+skill share --path ./my-skill
+
+# Share a skill to a specific repository
+skill share --path ./my-skill --repo https://github.com/org/skills-repo.git
+
+# Share a skill with SSH URL
+skill share --path ~/skills/deploy-app --repo git@github.com:org/skills.git
+```
+
+The share command:
+1. Validates the skill structure (requires SKILL.md)
+2. Forks the target repository
+3. Creates a new branch
+4. Copies the skill folder
+5. Commits and pushes changes
+6. Creates a pull request
+7. Returns the PR URL
+
+**Requirements:**
+- `gh` CLI must be installed and authenticated
+- Skill must have a valid structure with SKILL.md file
 
 ### Coming Soon
 
