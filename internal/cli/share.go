@@ -318,12 +318,39 @@ func checkForkExists(owner, repo string) (bool, string, error) {
 	return false, "", nil
 }
 
+// checkIsOwner checks if the current user is the owner of the repository
+func checkIsOwner(owner, repo string) (bool, error) {
+	// Get current user
+	userCmd := exec.Command("gh", "api", "user", "--jq", ".login")
+	userOutput, err := userCmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("error getting current user: %w", err)
+	}
+	currentUser := strings.TrimSpace(string(userOutput))
+
+	// Compare owner with current user
+	return strings.EqualFold(owner, currentUser), nil
+}
+
 // forkRepository forks a repository and returns the fork URL
 func forkRepository(repoURL string) (string, error) {
 	// Extract owner/repo from URL
 	owner, repo, err := parseGitHubURL(repoURL)
 	if err != nil {
 		return "", err
+	}
+
+	// Check if user is already the owner
+	isOwner, err := checkIsOwner(owner, repo)
+	if err != nil {
+		return "", fmt.Errorf("error checking repository ownership: %w", err)
+	}
+
+	if isOwner {
+		cyan := color.New(color.FgCyan).SprintFunc()
+		fmt.Printf("%s You are the owner of this repository, using it directly\n", cyan("ℹ"))
+		fmt.Printf("  Repository URL: %s\n", repoURL)
+		return repoURL, nil
 	}
 
 	// Check if fork already exists
