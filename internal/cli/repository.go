@@ -22,48 +22,27 @@ var (
 
 // getRepositoryHelp returns colored help text for repository command
 func getRepositoryHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s    %s
-                      %s
-
-  %s       %s
-                      %s
-
-  %s                %s
-
-  %s  %s
-
-%s
-  %s
-  %s
-  %s
-  %s`,
-		"Commands to manage skill repositories.",
-
-		cyan("AVAILABLE SUBCOMMANDS:"),
-		yellow("add <name> <url>"), dim("Add a new repository"),
-		dim("Flags: --force, --skip-verify, --set-current"),
-
-		yellow("remove <name>"), dim("Remove a repository"),
-		dim("Flags: --keep-local"),
-
-		yellow("list"), dim("List all configured repositories"),
-
-		yellow("set-current <name>"), dim("Set the current active repository"),
-
-		cyan("EXAMPLES:"),
-		green("skill repository add myrepo https://github.com/org/skills.git"),
-		green("skill repository list"),
-		green("skill repository set-current myrepo"),
-		green("skill repository remove oldrepo"),
-	)
+	return NewHelpBuilder().
+		Description("Commands to manage skill repositories.").
+		Section("AVAILABLE SUBCOMMANDS:").
+		Item(yellow("add <name> <url>"), "Add a new repository").
+		Text("                      "+dim("Flags: --force, --skip-verify, --set-current")).
+		EmptyLine().
+		Item(yellow("remove <name>"), "Remove a repository").
+		Text("                      "+dim("Flags: --keep-local")).
+		EmptyLine().
+		Item(yellow("list"), "List all configured repositories").
+		EmptyLine().
+		Item(yellow("set-current <name>"), "Set the current active repository").
+		Section("EXAMPLES:").
+		Example("skill repository add myrepo https://github.com/org/skills.git", "").
+		Example("skill repository list", "").
+		Example("skill repository set-current myrepo", "").
+		Example("skill repository remove oldrepo", "").
+		Build()
 }
 
 // repositoryCmd represents the repository command group
@@ -113,41 +92,24 @@ var repositoryAddCmd = &cobra.Command{
 
 // getRepositoryRemoveHelp returns colored help text
 func getRepositoryRemoveHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s              %s
-
-%s
-  %s        %s
-
-%s
-  - Removes repository from configuration
-  - Deletes local repository files (unless --keep-local)
-  - Cannot remove the active repository (switch first)
-
-%s
-  %s   %s
-  %s   %s`,
-		"Remove a repository from configuration.",
-
-		cyan("PARAMETERS:"),
-		yellow("<name>"), dim("Name of the repository to remove (required)"),
-
-		cyan("FLAGS:"),
-		green("--keep-local"), dim("Keep local repository files, only remove from config"),
-
-		cyan("BEHAVIOR:"),
-
-		cyan("EXAMPLES:"),
-		green("skill repository remove oldrepo"), dim("# Remove repo and local files"),
-		green("skill repository remove oldrepo --keep-local"), dim("# Remove from config only"),
-	)
+	return NewHelpBuilder().
+		Description("Remove a repository from configuration.").
+		Section("PARAMETERS:").
+		Item(yellow("<name>"), "Name of the repository to remove (required)").
+		Section("FLAGS:").
+		Item("--keep-local", "Keep local repository files, only remove from config").
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Removes repository from configuration",
+			"Deletes local repository files (unless --keep-local)",
+			"Cannot remove the active repository (switch first)",
+		}).
+		Section("EXAMPLES:").
+		Example("skill repository remove oldrepo", "# Remove repo and local files").
+		Example("skill repository remove oldrepo --keep-local", "# Remove from config only").
+		Build()
 }
 
 // repositoryRemoveCmd removes a repository

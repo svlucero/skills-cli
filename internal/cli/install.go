@@ -20,50 +20,30 @@ var (
 
 // getInstallHelp returns colored help text for install command
 func getInstallHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s            %s
-
-%s
-  %s           %s
-  %s       %s
-                          %s
-
-%s
-  - Copies the skill directory to the provider's skills location
-  - For Claude: ~/.claude/skills/<skill-name>/
-  - For Cursor: ~/.cursor/skills/<skill-name>/
-  - Overwrites existing installation if skill already exists
-
-%s
-  %s                            %s
-  %s              %s
-  %s          %s
-  %s`,
-		"Install a skill from a repository to a provider.",
-
-		cyan("PARAMETERS:"),
-		yellow("<skill-name>"), dim("Name of the skill to install (required)"),
-
-		cyan("FLAGS:"),
-		green("--repo <name>"), dim("Repository to install from (default: active repo)"),
-		green("--provider <name>"), dim("Provider to install to (default: claude)"),
-		dim("Supported: claude, cursor"),
-
-		cyan("BEHAVIOR:"),
-
-		cyan("EXAMPLES:"),
-		green("skill install explain-code"), dim("# Install to Claude from active repo"),
-		green("skill install explain-code --repo myrepo"), dim("# Install from specific repo"),
-		green("skill install explain-code --provider cursor"), dim("# Install to Cursor"),
-		green("skill install deploy-app --repo company --provider claude"),
-	)
+	return NewHelpBuilder().
+		Description("Install a skill from a repository to a provider.").
+		Section("PARAMETERS:").
+		Item(yellow("<skill-name>"), "Name of the skill to install (required)").
+		Section("FLAGS:").
+		Item("--repo <name>", "Repository to install from (default: active repo)").
+		Item("--provider <name>", "Provider to install to (default: claude)").
+		Text("                          "+dim("Supported: claude, cursor")).
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Copies the skill directory to the provider's skills location",
+			"For Claude: ~/.claude/skills/<skill-name>/",
+			"For Cursor: ~/.cursor/skills/<skill-name>/",
+			"Overwrites existing installation if skill already exists",
+		}).
+		Section("EXAMPLES:").
+		Example("skill install explain-code", "# Install to Claude from active repo").
+		Example("skill install explain-code --repo myrepo", "# Install from specific repo").
+		Example("skill install explain-code --provider cursor", "# Install to Cursor").
+		Example("skill install deploy-app --repo company --provider claude", "").
+		Build()
 }
 
 // installCmd represents the install command

@@ -13,44 +13,25 @@ import (
 
 // getConfigHelp returns colored help text for config command
 func getConfigHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s                  %s
-                        %s
-
-  %s        %s
-                        %s
-
-  %s                %s
-                        %s
-
-%s
-  %s
-  %s
-  %s`,
-		"Commands to view and modify skill CLI configuration.",
-
-		cyan("AVAILABLE SUBCOMMANDS:"),
-		yellow("show"), dim("Show current configuration"),
-		dim("Shows all repositories, active repo, and status"),
-
-		yellow("set-repo <url>"), dim("Change configured repository"),
-		dim("Flags: --no-verify"),
-
-		yellow("verify"), dim("Verify repository access"),
-		dim("Tests connectivity to the configured repository"),
-
-		cyan("EXAMPLES:"),
-		green("skill config show"),
-		green("skill config set-repo https://github.com/org/new-repo.git"),
-		green("skill config verify"),
-	)
+	return NewHelpBuilder().
+		Description("Commands to view and modify skill CLI configuration.").
+		Section("AVAILABLE SUBCOMMANDS:").
+		Item(yellow("show"), "Show current configuration").
+		Text("                        "+dim("Shows all repositories, active repo, and status")).
+		EmptyLine().
+		Item(yellow("set-repo <url>"), "Change configured repository").
+		Text("                        "+dim("Flags: --no-verify")).
+		EmptyLine().
+		Item(yellow("verify"), "Verify repository access").
+		Text("                        "+dim("Tests connectivity to the configured repository")).
+		Section("EXAMPLES:").
+		Example("skill config show", "").
+		Example("skill config set-repo https://github.com/org/new-repo.git", "").
+		Example("skill config verify", "").
+		Build()
 }
 
 // configCmd represents the config command group
@@ -62,33 +43,25 @@ var configCmd = &cobra.Command{
 
 // getConfigShowHelp returns colored help text
 func getConfigShowHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-
-	return fmt.Sprintf(`%s
-
-%s
-  - Configuration file path
-  - Configuration version
-  - Active repository name
-  - All configured repositories with:
-    * Repository name
-    * URL (HTTPS or SSH)
-    * Local path
-    * Authentication type
-    * Last verification time
-    * Repository status (clean, pending changes, not cloned)
-    * Active indicator (*)
-
-%s
-  %s`,
-		"Shows current skill CLI configuration.",
-
-		cyan("OUTPUT INCLUDES:"),
-
-		cyan("EXAMPLE:"),
-		green("skill config show"),
-	)
+	return NewHelpBuilder().
+		Description("Shows current skill CLI configuration.").
+		Section("OUTPUT INCLUDES:").
+		BulletList([]string{
+			"Configuration file path",
+			"Configuration version",
+			"Active repository name",
+			"All configured repositories with:",
+			"  * Repository name",
+			"  * URL (HTTPS or SSH)",
+			"  * Local path",
+			"  * Authentication type",
+			"  * Last verification time",
+			"  * Repository status (clean, pending changes, not cloned)",
+			"  * Active indicator (*)",
+		}).
+		Section("EXAMPLE:").
+		Example("skill config show", "").
+		Build()
 }
 
 // configShowCmd shows current configuration
@@ -101,43 +74,26 @@ var configShowCmd = &cobra.Command{
 
 // getConfigSetRepoHelp returns colored help text
 func getConfigSetRepoHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s    %s
-
-%s
-  %s         %s
-
-%s
-  - Validates URL format
-  - Verifies repository access (unless --no-verify)
-  - Updates configuration with new URL
-  - Does not automatically update local repository
-  - Run 'skill update' to sync (coming soon)
-
-%s
-  %s
-  %s`,
-		"Changes the configured skills repository.",
-
-		cyan("PARAMETERS:"),
-		yellow("<repository-url>"), dim("New Git repository URL - HTTPS or SSH format (required)"),
-
-		cyan("FLAGS:"),
-		green("--no-verify"), dim("Skip repository verification before saving"),
-
-		cyan("BEHAVIOR:"),
-
-		cyan("EXAMPLES:"),
-		green("skill config set-repo https://github.com/org/new-repo.git"),
-		green("skill config set-repo git@github.com:org/new-repo.git --no-verify"),
-	)
+	return NewHelpBuilder().
+		Description("Changes the configured skills repository.").
+		Section("PARAMETERS:").
+		Item(yellow("<repository-url>"), "New Git repository URL - HTTPS or SSH format (required)").
+		Section("FLAGS:").
+		Item("--no-verify", "Skip repository verification before saving").
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Validates URL format",
+			"Verifies repository access (unless --no-verify)",
+			"Updates configuration with new URL",
+			"Does not automatically update local repository",
+			"Run 'skill update' to sync (coming soon)",
+		}).
+		Section("EXAMPLES:").
+		Example("skill config set-repo https://github.com/org/new-repo.git", "").
+		Example("skill config set-repo git@github.com:org/new-repo.git --no-verify", "").
+		Build()
 }
 
 // configSetRepoCmd changes the configured repository
@@ -151,32 +107,23 @@ var configSetRepoCmd = &cobra.Command{
 
 // getConfigVerifyHelp returns colored help text
 func getConfigVerifyHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-
-	return fmt.Sprintf(`%s
-
-%s
-  - Tests connectivity to the configured repository
-  - Checks authentication (SSH keys or HTTPS credentials)
-  - Updates last verification timestamp on success
-  - Provides troubleshooting help on failure
-
-%s
-  - For HTTPS: Tests repository read access
-  - For SSH: Validates SSH key authentication
-
-%s
-  %s`,
-		"Verifies that the configured repository is accessible.",
-
-		cyan("BEHAVIOR:"),
-
-		cyan("VERIFICATION METHODS:"),
-
-		cyan("EXAMPLES:"),
-		green("skill config verify"),
-	)
+	return NewHelpBuilder().
+		Description("Verifies that the configured repository is accessible.").
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Tests connectivity to the configured repository",
+			"Checks authentication (SSH keys or HTTPS credentials)",
+			"Updates last verification timestamp on success",
+			"Provides troubleshooting help on failure",
+		}).
+		Section("VERIFICATION METHODS:").
+		BulletList([]string{
+			"For HTTPS: Tests repository read access",
+			"For SSH: Validates SSH key authentication",
+		}).
+		Section("EXAMPLES:").
+		Example("skill config verify", "").
+		Build()
 }
 
 // configVerifyCmd verifies repository access

@@ -20,64 +20,41 @@ var (
 
 // getShareHelp returns colored help text for share command
 func getShareHelp() string {
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
 
-	return fmt.Sprintf(`%s
-
-%s
-  %s            %s
-
-%s
-  %s             %s
-  %s             %s
-
-%s
-  1. Validates the skill structure (must have SKILL.md)
-  2. Forks the target repository using gh CLI
-  3. Creates a new branch
-  4. Copies the skill folder to the forked repository
-  5. Commits and pushes the changes
-  6. Creates a pull request against main branch
-  7. Returns the PR URL
-
-%s
-  my-skill/
-  ├── SKILL.md          # Required: instructions + metadata
-  ├── scripts/          # Optional: executable code
-  ├── references/       # Optional: documentation
-  └── assets/           # Optional: templates, resources
-
-%s
-  - gh CLI must be installed and authenticated
-  - You must have permissions to fork the target repository
-
-%s
-  %s                    %s
-  %s      %s
-  %s`,
-		"Share a skill by forking a repository and creating a PR.",
-
-		cyan("PARAMETERS:"),
-		yellow("<path>"), dim("Path to the skill folder to share (required)"),
-
-		cyan("FLAGS:"),
-		green("--path <path>"), dim("Path to the skill folder (required)"),
-		green("--repo <url>"), dim("Target repository URL (optional, defaults to current)"),
-
-		cyan("WORKFLOW:"),
-
-		cyan("SKILL STRUCTURE:"),
-
-		cyan("REQUIREMENTS:"),
-
-		cyan("EXAMPLES:"),
-		green("skill share --path ./my-skill"), dim("# Share to current repo"),
-		green("skill share --path ./my-skill --repo https://github.com/org/skills"), dim("# Share to specific repo"),
-		green("skill share --path ~/skills/deploy-app --repo git@github.com:org/skills.git"),
-	)
+	return NewHelpBuilder().
+		Description("Share a skill by forking a repository and creating a PR.").
+		Section("PARAMETERS:").
+		Item(yellow("<path>"), "Path to the skill folder to share (required)").
+		Section("FLAGS:").
+		Item("--path <path>", "Path to the skill folder (required)").
+		Item("--repo <url>", "Target repository URL (optional, defaults to current)").
+		Section("WORKFLOW:").
+		BulletList([]string{
+			"1. Validates the skill structure (must have SKILL.md)",
+			"2. Forks the target repository using gh CLI",
+			"3. Creates a new branch",
+			"4. Copies the skill folder to the forked repository",
+			"5. Commits and pushes the changes",
+			"6. Creates a pull request against main branch",
+			"7. Returns the PR URL",
+		}).
+		Section("SKILL STRUCTURE:").
+		Text("  my-skill/").
+		Text("  ├── SKILL.md          # Required: instructions + metadata").
+		Text("  ├── scripts/          # Optional: executable code").
+		Text("  ├── references/       # Optional: documentation").
+		Text("  └── assets/           # Optional: templates, resources").
+		Section("REQUIREMENTS:").
+		BulletList([]string{
+			"gh CLI must be installed and authenticated",
+			"You must have permissions to fork the target repository",
+		}).
+		Section("EXAMPLES:").
+		Example("skill share --path ./my-skill", "# Share to current repo").
+		Example("skill share --path ./my-skill --repo https://github.com/org/skills", "# Share to specific repo").
+		Example("skill share --path ~/skills/deploy-app --repo git@github.com:org/skills.git", "").
+		Build()
 }
 
 // shareCmd represents the share command
