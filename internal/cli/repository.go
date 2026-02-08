@@ -14,98 +14,181 @@ import (
 
 var (
 	// Flags for repository commands
-	forceRepo   bool
-	skipVerify  bool
-	setCurrent  bool
-	keepLocal   bool
+	forceRepo  bool
+	skipVerify bool
+	setCurrent bool
+	keepLocal  bool
 )
+
+// getRepositoryHelp returns colored help text for repository command
+func getRepositoryHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
+
+	return fmt.Sprintf(`%s
+
+%s
+  %s    %s
+                      %s
+
+  %s       %s
+                      %s
+
+  %s                %s
+
+  %s  %s
+
+%s
+  %s
+  %s
+  %s
+  %s`,
+		"Commands to manage skill repositories.",
+
+		cyan("AVAILABLE SUBCOMMANDS:"),
+		yellow("add <name> <url>"), dim("Add a new repository"),
+		dim("Flags: --force, --skip-verify, --set-current"),
+
+		yellow("remove <name>"), dim("Remove a repository"),
+		dim("Flags: --keep-local"),
+
+		yellow("list"), dim("List all configured repositories"),
+
+		yellow("set-current <name>"), dim("Set the current active repository"),
+
+		cyan("EXAMPLES:"),
+		green("skill repository add myrepo https://github.com/org/skills.git"),
+		green("skill repository list"),
+		green("skill repository set-current myrepo"),
+		green("skill repository remove oldrepo"),
+	)
+}
 
 // repositoryCmd represents the repository command group
 var repositoryCmd = &cobra.Command{
 	Use:   "repository",
 	Short: "Manage skill repositories",
-	Long: `Commands to manage skill repositories.
-
-Available subcommands:
-  add <name> <url>    Add a new repository
-                      Flags: --force, --skip-verify, --set-current
-
-  remove <name>       Remove a repository
-                      Flags: --keep-local
-
-  list                List all configured repositories
-
-  set-current <name>  Set the current active repository
-
-Examples:
-  skill repository add myrepo https://github.com/org/skills.git
-  skill repository list
-  skill repository set-current myrepo
-  skill repository remove oldrepo`,
+	Long:  getRepositoryHelp(),
 }
 
-// repositoryAddCmd adds a new repository
-var repositoryAddCmd = &cobra.Command{
-	Use:   "add <name> <repository-url> [flags]",
-	Short: "Add a new skill repository",
-	Long: `Add a new Git repository where skills are stored.
+// getRepositoryAddHelp returns colored help text
+func getRepositoryAddHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
 
-Parameters:
-  <name>              Name to identify this repository (required)
-  <repository-url>    Git repository URL - HTTPS or SSH format (required)
+	return fmt.Sprintf(`%s
 
-Flags:
-  -f, --force         Overwrite existing repository with same name
-  --skip-verify       Skip repository verification (not recommended)
-  --set-current       Set this repository as the active one
+%s
+  %s              %s
+  %s    %s
 
-Behavior:
+%s
+  %s         %s
+  %s       %s
+  %s       %s
+
+%s
   - Validates repository URL format
   - Verifies repository access (unless --skip-verify)
   - Clones to ~/.local/share/skill/repos/<name>
   - Saves configuration to ~/.config/skill/config.yaml
   - First repository added automatically becomes active
 
-Examples:
-  skill repository add myrepo https://github.com/org/skills-repo.git
-  skill repository add company git@github.com:company/internal-skills.git
-  skill repository add myrepo https://github.com/org/skills-repo.git --force
-  skill repository add secondary https://github.com/org/another.git --set-current`,
-	Args: cobra.ExactArgs(2),
-	RunE: runRepositoryAdd,
+%s
+  %s
+  %s
+  %s
+  %s`,
+		"Add a new Git repository where skills are stored.",
+
+		cyan("PARAMETERS:"),
+		yellow("<name>"), dim("Name to identify this repository (required)"),
+		yellow("<repository-url>"), dim("Git repository URL - HTTPS or SSH format (required)"),
+
+		cyan("FLAGS:"),
+		green("-f, --force"), dim("Overwrite existing repository with same name"),
+		green("--skip-verify"), dim("Skip repository verification (not recommended)"),
+		green("--set-current"), dim("Set this repository as the active one"),
+
+		cyan("BEHAVIOR:"),
+
+		cyan("EXAMPLES:"),
+		green("skill repository add myrepo https://github.com/org/skills-repo.git"),
+		green("skill repository add company git@github.com:company/internal-skills.git"),
+		green("skill repository add myrepo https://github.com/org/skills-repo.git --force"),
+		green("skill repository add secondary https://github.com/org/another.git --set-current"),
+	)
+}
+
+// repositoryAddCmd adds a new repository
+var repositoryAddCmd = &cobra.Command{
+	Use:   "add <name> <repository-url> [flags]",
+	Short: "Add a new skill repository",
+	Long:  getRepositoryAddHelp(),
+	Args:  cobra.ExactArgs(2),
+	RunE:  runRepositoryAdd,
+}
+
+// getRepositoryRemoveHelp returns colored help text
+func getRepositoryRemoveHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
+
+	return fmt.Sprintf(`%s
+
+%s
+  %s              %s
+
+%s
+  %s        %s
+
+%s
+  - Removes repository from configuration
+  - Deletes local repository files (unless --keep-local)
+  - Cannot remove the active repository (switch first)
+
+%s
+  %s   %s
+  %s   %s`,
+		"Remove a repository from configuration.",
+
+		cyan("PARAMETERS:"),
+		yellow("<name>"), dim("Name of the repository to remove (required)"),
+
+		cyan("FLAGS:"),
+		green("--keep-local"), dim("Keep local repository files, only remove from config"),
+
+		cyan("BEHAVIOR:"),
+
+		cyan("EXAMPLES:"),
+		green("skill repository remove oldrepo"), dim("# Remove repo and local files"),
+		green("skill repository remove oldrepo --keep-local"), dim("# Remove from config only"),
+	)
 }
 
 // repositoryRemoveCmd removes a repository
 var repositoryRemoveCmd = &cobra.Command{
 	Use:   "remove <name> [flags]",
 	Short: "Remove a repository",
-	Long: `Remove a repository from configuration.
-
-Parameters:
-  <name>              Name of the repository to remove (required)
-
-Flags:
-  --keep-local        Keep local repository files, only remove from config
-
-Behavior:
-  - Removes repository from configuration
-  - Deletes local repository files (unless --keep-local)
-  - Cannot remove the active repository (switch first)
-
-Examples:
-  skill repository remove oldrepo                # Remove repo and local files
-  skill repository remove oldrepo --keep-local   # Remove from config only`,
-	Args: cobra.ExactArgs(1),
-	RunE: runRepositoryRemove,
+	Long:  getRepositoryRemoveHelp(),
+	Args:  cobra.ExactArgs(1),
+	RunE:  runRepositoryRemove,
 }
 
-// repositoryListCmd lists all repositories
-var repositoryListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all configured repositories",
-	Long: `Shows all configured repositories with basic information.
+// getRepositoryListHelp returns colored help text
+func getRepositoryListHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
 
-Output includes:
+	return fmt.Sprintf(`%s
+
+%s
   - Repository name
   - URL (HTTPS or SSH)
   - Local path
@@ -114,30 +197,65 @@ Output includes:
   - Clone status
   - Active repository indicator (*)
 
-Example:
-  skill repository list`,
-	RunE: runRepositoryList,
+%s
+  %s`,
+		"Shows all configured repositories with basic information.",
+
+		cyan("OUTPUT INCLUDES:"),
+
+		cyan("EXAMPLE:"),
+		green("skill repository list"),
+	)
+}
+
+// repositoryListCmd lists all repositories
+var repositoryListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all configured repositories",
+	Long:  getRepositoryListHelp(),
+	RunE:  runRepositoryList,
+}
+
+// getRepositorySetCurrentHelp returns colored help text
+func getRepositorySetCurrentHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
+
+	return fmt.Sprintf(`%s
+
+%s
+  %s              %s
+
+%s
+  - Sets the specified repository as the active one
+  - Commands like 'skill list' and 'skill install' use the active repo by default
+  - The repository must already be added to configuration
+
+%s
+  %s
+  %s`,
+		"Change the active repository.",
+
+		cyan("PARAMETERS:"),
+		yellow("<name>"), dim("Name of the repository to set as active (required)"),
+
+		cyan("BEHAVIOR:"),
+
+		cyan("EXAMPLES:"),
+		green("skill repository set-current myrepo"),
+		green("skill repository set-current company"),
+	)
 }
 
 // repositorySetCurrentCmd sets the active repository
 var repositorySetCurrentCmd = &cobra.Command{
 	Use:   "set-current <name>",
 	Short: "Set the current active repository",
-	Long: `Change the active repository.
-
-Parameters:
-  <name>              Name of the repository to set as active (required)
-
-Behavior:
-  - Sets the specified repository as the active one
-  - Commands like 'skill list' and 'skill install' use the active repo by default
-  - The repository must already be added to configuration
-
-Examples:
-  skill repository set-current myrepo
-  skill repository set-current company`,
-	Args: cobra.ExactArgs(1),
-	RunE: runRepositorySetCurrent,
+	Long:  getRepositorySetCurrentHelp(),
+	Args:  cobra.ExactArgs(1),
+	RunE:  runRepositorySetCurrent,
 }
 
 func init() {

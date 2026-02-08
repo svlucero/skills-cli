@@ -23,34 +23,63 @@ var (
 	listProvider  string
 )
 
-// listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list [flags]",
-	Short: "List available or installed skills",
-	Long: `List available skills from repositories or installed skills from a provider.
+// getListHelp returns colored help text for list command
+func getListHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
 
-Flags:
-  --repo <name>           List skills from a specific repository
-  --all                   List skills from all repositories
-  --installed             List installed skills (requires --provider)
-  --provider <name>       Provider to list from (claude, cursor)
-  -c, --compact           Compact one-line-per-skill format
-  --no-update             Skip repository update before listing
+	return fmt.Sprintf(`%s
 
-Behavior:
+%s
+  %s           %s
+  %s                   %s
+  %s             %s
+  %s       %s
+  %s           %s
+  %s             %s
+
+%s
   - By default, lists skills from the active repository
   - Repository is automatically updated (git pull) before listing
   - Use --no-update to skip the repository update
   - Use --installed with --provider to see installed skills
 
-Examples:
-  skill list                                    # List from active repo
-  skill list --repo myrepo                      # List from specific repo
-  skill list --all                              # List from all repos
-  skill list --installed --provider claude      # List installed in Claude
-  skill list --compact                          # Compact format
-  skill list --no-update                        # Skip repo update`,
-	RunE: runList,
+%s
+  %s                                    %s
+  %s                      %s
+  %s                              %s
+  %s      %s
+  %s                          %s
+  %s                        %s`,
+		"List available skills from repositories or installed skills from a provider.",
+
+		cyan("FLAGS:"),
+		green("--repo <name>"), dim("List skills from a specific repository"),
+		green("--all"), dim("List skills from all repositories"),
+		green("--installed"), dim("List installed skills (requires --provider)"),
+		green("--provider <name>"), dim("Provider to list from (claude, cursor)"),
+		green("-c, --compact"), dim("Compact one-line-per-skill format"),
+		green("--no-update"), dim("Skip repository update before listing"),
+
+		cyan("BEHAVIOR:"),
+
+		cyan("EXAMPLES:"),
+		green("skill list"), dim("# List from active repo"),
+		green("skill list --repo myrepo"), dim("# List from specific repo"),
+		green("skill list --all"), dim("# List from all repos"),
+		green("skill list --installed --provider claude"), dim("# List installed in Claude"),
+		green("skill list --compact"), dim("# Compact format"),
+		green("skill list --no-update"), dim("# Skip repo update"),
+	)
+}
+
+// listCmd represents the list command
+var listCmd = &cobra.Command{
+	Use:   "list [flags]",
+	Short: "List available or installed skills",
+	Long:  getListHelp(),
+	RunE:  runList,
 }
 
 func init() {

@@ -11,35 +11,63 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// getConfigHelp returns colored help text for config command
+func getConfigHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
+
+	return fmt.Sprintf(`%s
+
+%s
+  %s                  %s
+                        %s
+
+  %s        %s
+                        %s
+
+  %s                %s
+                        %s
+
+%s
+  %s
+  %s
+  %s`,
+		"Commands to view and modify skill CLI configuration.",
+
+		cyan("AVAILABLE SUBCOMMANDS:"),
+		yellow("show"), dim("Show current configuration"),
+		dim("Shows all repositories, active repo, and status"),
+
+		yellow("set-repo <url>"), dim("Change configured repository"),
+		dim("Flags: --no-verify"),
+
+		yellow("verify"), dim("Verify repository access"),
+		dim("Tests connectivity to the configured repository"),
+
+		cyan("EXAMPLES:"),
+		green("skill config show"),
+		green("skill config set-repo https://github.com/org/new-repo.git"),
+		green("skill config verify"),
+	)
+}
+
 // configCmd represents the config command group
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manages skill CLI configuration",
-	Long: `Commands to view and modify skill CLI configuration.
-
-Available subcommands:
-  show                  Show current configuration
-                        Shows all repositories, active repo, and status
-
-  set-repo <url>        Change configured repository
-                        Flags: --no-verify
-
-  verify                Verify repository access
-                        Tests connectivity to the configured repository
-
-Examples:
-  skill config show
-  skill config set-repo https://github.com/org/new-repo.git
-  skill config verify`,
+	Long:  getConfigHelp(),
 }
 
-// configShowCmd shows current configuration
-var configShowCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Show current configuration",
-	Long: `Shows current skill CLI configuration.
+// getConfigShowHelp returns colored help text
+func getConfigShowHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
 
-Output includes:
+	return fmt.Sprintf(`%s
+
+%s
   - Configuration file path
   - Configuration version
   - Active repository name
@@ -52,56 +80,111 @@ Output includes:
     * Repository status (clean, pending changes, not cloned)
     * Active indicator (*)
 
-Example:
-  skill config show`,
-	RunE: runConfigShow,
+%s
+  %s`,
+		"Shows current skill CLI configuration.",
+
+		cyan("OUTPUT INCLUDES:"),
+
+		cyan("EXAMPLE:"),
+		green("skill config show"),
+	)
 }
 
-// configSetRepoCmd changes the configured repository
-var configSetRepoCmd = &cobra.Command{
-	Use:   "set-repo <repository-url> [flags]",
-	Short: "Change skills repository",
-	Long: `Changes the configured skills repository.
+// configShowCmd shows current configuration
+var configShowCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show current configuration",
+	Long:  getConfigShowHelp(),
+	RunE:  runConfigShow,
+}
 
-Parameters:
-  <repository-url>    New Git repository URL - HTTPS or SSH format (required)
+// getConfigSetRepoHelp returns colored help text
+func getConfigSetRepoHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
 
-Flags:
-  --no-verify         Skip repository verification before saving
+	return fmt.Sprintf(`%s
 
-Behavior:
+%s
+  %s    %s
+
+%s
+  %s         %s
+
+%s
   - Validates URL format
   - Verifies repository access (unless --no-verify)
   - Updates configuration with new URL
   - Does not automatically update local repository
   - Run 'skill update' to sync (coming soon)
 
-Examples:
-  skill config set-repo https://github.com/org/new-repo.git
-  skill config set-repo git@github.com:org/new-repo.git --no-verify`,
-	Args: cobra.ExactArgs(1),
-	RunE: runConfigSetRepo,
+%s
+  %s
+  %s`,
+		"Changes the configured skills repository.",
+
+		cyan("PARAMETERS:"),
+		yellow("<repository-url>"), dim("New Git repository URL - HTTPS or SSH format (required)"),
+
+		cyan("FLAGS:"),
+		green("--no-verify"), dim("Skip repository verification before saving"),
+
+		cyan("BEHAVIOR:"),
+
+		cyan("EXAMPLES:"),
+		green("skill config set-repo https://github.com/org/new-repo.git"),
+		green("skill config set-repo git@github.com:org/new-repo.git --no-verify"),
+	)
+}
+
+// configSetRepoCmd changes the configured repository
+var configSetRepoCmd = &cobra.Command{
+	Use:   "set-repo <repository-url> [flags]",
+	Short: "Change skills repository",
+	Long:  getConfigSetRepoHelp(),
+	Args:  cobra.ExactArgs(1),
+	RunE:  runConfigSetRepo,
+}
+
+// getConfigVerifyHelp returns colored help text
+func getConfigVerifyHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+
+	return fmt.Sprintf(`%s
+
+%s
+  - Tests connectivity to the configured repository
+  - Checks authentication (SSH keys or HTTPS credentials)
+  - Updates last verification timestamp on success
+  - Provides troubleshooting help on failure
+
+%s
+  - For HTTPS: Tests repository read access
+  - For SSH: Validates SSH key authentication
+
+%s
+  %s`,
+		"Verifies that the configured repository is accessible.",
+
+		cyan("BEHAVIOR:"),
+
+		cyan("VERIFICATION METHODS:"),
+
+		cyan("EXAMPLES:"),
+		green("skill config verify"),
+	)
 }
 
 // configVerifyCmd verifies repository access
 var configVerifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Verify configured repository access",
-	Long: `Verifies that the configured repository is accessible.
-
-Behavior:
-  - Tests connectivity to the configured repository
-  - Checks authentication (SSH keys or HTTPS credentials)
-  - Updates last verification timestamp on success
-  - Provides troubleshooting help on failure
-
-Verification methods:
-  - For HTTPS: Tests repository read access
-  - For SSH: Validates SSH key authentication
-
-Examples:
-  skill config verify`,
-	RunE: runConfigVerify,
+	Long:  getConfigVerifyHelp(),
+	RunE:  runConfigVerify,
 }
 
 var (

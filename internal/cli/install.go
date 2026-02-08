@@ -18,33 +18,61 @@ var (
 	installProvider string
 )
 
-// installCmd represents the install command
-var installCmd = &cobra.Command{
-	Use:   "install <skill-name> [flags]",
-	Short: "Install a skill to a provider",
-	Long: `Install a skill from a repository to a provider.
+// getInstallHelp returns colored help text for install command
+func getInstallHelp() string {
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
 
-Parameters:
-  <skill-name>            Name of the skill to install (required)
+	return fmt.Sprintf(`%s
 
-Flags:
-  --repo <name>           Repository to install from (default: active repo)
-  --provider <name>       Provider to install to (default: claude)
-                          Supported: claude, cursor
+%s
+  %s            %s
 
-Behavior:
+%s
+  %s           %s
+  %s       %s
+                          %s
+
+%s
   - Copies the skill directory to the provider's skills location
   - For Claude: ~/.claude/skills/<skill-name>/
   - For Cursor: ~/.cursor/skills/<skill-name>/
   - Overwrites existing installation if skill already exists
 
-Examples:
-  skill install explain-code                            # Install to Claude from active repo
-  skill install explain-code --repo myrepo              # Install from specific repo
-  skill install explain-code --provider cursor          # Install to Cursor
-  skill install deploy-app --repo company --provider claude`,
-	Args: cobra.ExactArgs(1),
-	RunE: runInstall,
+%s
+  %s                            %s
+  %s              %s
+  %s          %s
+  %s`,
+		"Install a skill from a repository to a provider.",
+
+		cyan("PARAMETERS:"),
+		yellow("<skill-name>"), dim("Name of the skill to install (required)"),
+
+		cyan("FLAGS:"),
+		green("--repo <name>"), dim("Repository to install from (default: active repo)"),
+		green("--provider <name>"), dim("Provider to install to (default: claude)"),
+		dim("Supported: claude, cursor"),
+
+		cyan("BEHAVIOR:"),
+
+		cyan("EXAMPLES:"),
+		green("skill install explain-code"), dim("# Install to Claude from active repo"),
+		green("skill install explain-code --repo myrepo"), dim("# Install from specific repo"),
+		green("skill install explain-code --provider cursor"), dim("# Install to Cursor"),
+		green("skill install deploy-app --repo company --provider claude"),
+	)
+}
+
+// installCmd represents the install command
+var installCmd = &cobra.Command{
+	Use:   "install <skill-name> [flags]",
+	Short: "Install a skill to a provider",
+	Long:  getInstallHelp(),
+	Args:  cobra.ExactArgs(1),
+	RunE:  runInstall,
 }
 
 func init() {
