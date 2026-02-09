@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/silvinalucero/skill_cli/internal/cache"
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/silvinalucero/skill_cli/internal/errors"
 	"github.com/silvinalucero/skill_cli/internal/git"
@@ -395,7 +396,34 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	configPath, _ := config.GetConfigPath()
 	fmt.Printf("%s Configuration saved to: %s\n", green("✓"), configPath)
 
-	// 12. Success message
+	// 12. Index skills for cache
+	fmt.Println()
+	cyan := color.New(color.FgCyan).SprintFunc()
+	fmt.Printf("%s Indexing skills...\n", cyan("→"))
+
+	skillCache, err := cache.Load()
+	if err != nil {
+		// Non-fatal: cache is optional, just warn
+		fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Could not load cache: %v", err))
+	} else {
+		if err := skillCache.IndexRepository(repoName, repoURL, repoPath); err != nil {
+			// Non-fatal: cache is optional, just warn
+			fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Could not index skills: %v", err))
+		} else {
+			if err := skillCache.Save(); err != nil {
+				// Non-fatal: cache is optional, just warn
+				fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Could not save cache: %v", err))
+			} else {
+				skillCount := 0
+				if repo, exists := skillCache.Repositories[repoName]; exists {
+					skillCount = len(repo.Skills)
+				}
+				fmt.Printf("%s Found and cached %d skills\n", green("✓"), skillCount)
+			}
+		}
+	}
+
+	// 13. Success message
 	fmt.Println()
 	if isNewConfig {
 		fmt.Printf("%s Repository initialized successfully!\n\n", green("✓"))
@@ -530,6 +558,22 @@ func runRepositoryRemove(cmd *cobra.Command, args []string) error {
 		}
 	} else if keepLocal {
 		fmt.Printf("Local repository kept at: %s\n", repo.LocalPath)
+	}
+
+	// Clean cache
+	yellow := color.New(color.FgYellow).SprintFunc()
+	skillCache, err := cache.Load()
+	if err != nil {
+		// Non-fatal: cache is optional, just warn
+		fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Could not load cache: %v", err))
+	} else {
+		skillCache.RemoveRepository(repoName)
+		if err := skillCache.Save(); err != nil {
+			// Non-fatal: cache is optional, just warn
+			fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Could not save cache: %v", err))
+		} else {
+			fmt.Printf("%s Cache cleaned\n", green("✓"))
+		}
 	}
 
 	return nil
