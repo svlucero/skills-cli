@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/fatih/color"
+	"github.com/silvinalucero/skill_cli/internal/cache"
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/silvinalucero/skill_cli/internal/errors"
 	"github.com/silvinalucero/skill_cli/internal/git"
@@ -21,6 +22,7 @@ var (
 	listNoUpdate  bool
 	listInstalled bool
 	listProvider  string
+	listNoCache   bool
 )
 
 // getListHelp returns colored help text for list command
@@ -66,6 +68,20 @@ func init() {
 	listCmd.Flags().BoolVar(&listNoUpdate, "no-update", false, "skip repository update before listing")
 	listCmd.Flags().BoolVar(&listInstalled, "installed", false, "list installed skills (requires --provider)")
 	listCmd.Flags().StringVar(&listProvider, "provider", "", "provider to list installed skills from (claude, cursor)")
+	listCmd.Flags().BoolVar(&listNoCache, "no-cache", false, "skip cache and scan directories directly")
+}
+
+// convertCacheEntryToSkill converts a cache.SkillEntry to skill.Skill
+func convertCacheEntryToSkill(entry cache.SkillEntry, repoName string) skill.Skill {
+	return skill.Skill{
+		Name:        entry.Name,
+		Description: entry.Description,
+		Version:     entry.Version,
+		RepoName:    repoName,
+		Path:        entry.Path,
+		Status:      skill.StatusAvailable,
+		UpdatedAt:   entry.UpdatedAt,
+	}
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -171,27 +187,76 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	// Get skills to list
 	var skills []skill.Skill
+	usedCache := false
 
-	if listAll {
-		// List from all repositories
-		skills, err = skill.GetAllSkills(cfg)
-		if err != nil {
-			fmt.Printf("%s Error getting skills: %v\n", red("✗"), err)
-			return err
+	// Try to use cache first (unless --no-cache)
+	if !listNoCache {
+		skillCache, cacheErr := cache.Load()
+		if cacheErr == nil {
+			// Cache loaded successfully, try to get skills from it
+			if listAll {
+				// Get all skills from cache
+				allEntries := skillCache.GetAllSkills()
+				skills = make([]skill.Skill, len(allEntries))
+				for i, entry := range allEntries {
+					// Find which repo this skill belongs to
+					repoName := ""
+					for rName, rCache := range skillCache.Repositories {
+						for _, s := range rCache.Skills {
+							if s.Name == entry.Name && s.Path == entry.Path {
+								repoName = rName
+								break
+							}
+						}
+						if repoName != "" {
+							break
+						}
+					}
+					skills[i] = convertCacheEntryToSkill(entry, repoName)
+				}
+				usedCache = true
+			} else {
+				// Get skills from specific repository (either specified or active)
+				targetRepo := listRepo
+				if targetRepo == "" {
+					targetRepo = cfg.ActiveRepo
+				}
+
+				entries, cacheErr := skillCache.GetSkills(targetRepo)
+				if cacheErr == nil {
+					skills = make([]skill.Skill, len(entries))
+					for i, entry := range entries {
+						skills[i] = convertCacheEntryToSkill(entry, targetRepo)
+					}
+					usedCache = true
+				}
+			}
 		}
-	} else if listRepo != "" {
-		// List from specific repository
-		skills, err = skill.GetSkillsFromRepo(cfg, listRepo)
-		if err != nil {
-			fmt.Printf("%s Error getting skills from '%s': %v\n", red("✗"), listRepo, err)
-			return err
-		}
-	} else {
-		// List from active repository
-		skills, err = skill.GetSkillsFromRepo(cfg, cfg.ActiveRepo)
-		if err != nil {
-			fmt.Printf("%s Error getting skills from active repository: %v\n", red("✗"), err)
-			return err
+	}
+
+	// Fallback to traditional method if cache wasn't used
+	if !usedCache {
+		if listAll {
+			// List from all repositories
+			skills, err = skill.GetAllSkills(cfg)
+			if err != nil {
+				fmt.Printf("%s Error getting skills: %v\n", red("✗"), err)
+				return err
+			}
+		} else if listRepo != "" {
+			// List from specific repository
+			skills, err = skill.GetSkillsFromRepo(cfg, listRepo)
+			if err != nil {
+				fmt.Printf("%s Error getting skills from '%s': %v\n", red("✗"), listRepo, err)
+				return err
+			}
+		} else {
+			// List from active repository
+			skills, err = skill.GetSkillsFromRepo(cfg, cfg.ActiveRepo)
+			if err != nil {
+				fmt.Printf("%s Error getting skills from active repository: %v\n", red("✗"), err)
+				return err
+			}
 		}
 	}
 
