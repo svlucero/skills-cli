@@ -14,8 +14,10 @@ import (
 )
 
 var (
-	installRepo     string
-	installProvider string
+	installRepo        string
+	installProvider    string
+	installForce       bool
+	installSkipExisting bool
 )
 
 // getInstallHelp returns colored help text for install command
@@ -31,12 +33,16 @@ func getInstallHelp() string {
 		Item("--repo <name>", "Repository to install from (default: active repo)").
 		Item("--provider <name>", "Provider to install to (default: claude)").
 		Text("                          "+dim("Supported: claude, cursor")).
+		Item("-f, --force", "Force reinstall even if already installed").
+		Item("--skip-existing", "Skip installation if already installed (useful for batch installs)").
 		Section("BEHAVIOR:").
 		BulletList([]string{
+			"Checks if skill is already installed before installing",
+			"Shows version information if available",
+			"Prompts before overwriting existing installations",
 			"Copies the skill directory to the provider's skills location",
 			"For Claude: ~/.claude/skills/<skill-name>/",
 			"For Cursor: ~/.cursor/skills/<skill-name>/",
-			"Overwrites existing installation if skill already exists",
 		}).
 		Section("EXAMPLES:").
 		Example("skill install explain-code", "# Install to Claude from active repo").
@@ -58,6 +64,28 @@ var installCmd = &cobra.Command{
 func init() {
 	installCmd.Flags().StringVar(&installRepo, "repo", "", "repository to install from (default: current)")
 	installCmd.Flags().StringVar(&installProvider, "provider", "claude", "provider to install to (claude, cursor, etc.)")
+	installCmd.Flags().BoolVarP(&installForce, "force", "f", false, "force reinstall even if already installed")
+	installCmd.Flags().BoolVar(&installSkipExisting, "skip-existing", false, "skip installation if already installed")
+}
+
+// checkSkillInstalled checks if a skill is already installed for a provider
+// Returns true if installed, false otherwise
+func checkSkillInstalled(skillName, provider string) (bool, string, error) {
+	skillsDir, err := getProviderSkillsDir(provider)
+	if err != nil {
+		return false, "", err
+	}
+
+	skillPath := filepath.Join(skillsDir, skillName)
+
+	// Check if directory exists
+	if _, err := os.Stat(skillPath); os.IsNotExist(err) {
+		return false, "", nil
+	} else if err != nil {
+		return false, "", fmt.Errorf("error checking skill path: %w", err)
+	}
+
+	return true, skillPath, nil
 }
 
 func runInstall(cmd *cobra.Command, args []string) error {
@@ -131,6 +159,49 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Version: %s\n", targetSkill.Version)
 	fmt.Println()
 
+	// Check if skill is already installed
+	fmt.Printf("%s Checking installation status...\n", cyan("→"))
+	isInstalled, installedPath, err := checkSkillInstalled(skillName, installProvider)
+	if err != nil {
+		fmt.Printf("%s %s\n", red("✗"), formatError("Error checking installation: %v", err))
+		return err
+	}
+
+	if isInstalled {
+		// Skill is already installed
+		cyan := color.New(color.FgCyan).SprintFunc()
+
+		if installSkipExisting {
+			// Skip installation as requested
+			fmt.Printf("%s Skill '%s' is already installed, skipping\n", cyan("ℹ"), skillName)
+			fmt.Printf("  Location: %s\n", installedPath)
+			fmt.Printf("  Version: %s\n", targetSkill.Version)
+			return nil
+		}
+
+		if !installForce {
+			// Not forcing, inform user and ask what to do
+			fmt.Printf("%s Skill '%s' is already installed\n", cyan("ℹ"), skillName)
+			fmt.Printf("  Location: %s\n", installedPath)
+			fmt.Printf("  Version: %s\n", targetSkill.Version)
+			fmt.Println()
+			fmt.Printf("%s Nothing to do! Skill is already installed.\n", green("✓"))
+			fmt.Println()
+			fmt.Println("Options:")
+			fmt.Println("  • Use --force to reinstall anyway")
+			fmt.Println("  • Use --skip-existing to skip without this message")
+			return nil
+		}
+
+		// Force reinstall requested
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Skill is already installed, reinstalling (--force)"))
+		fmt.Printf("  Location: %s\n", installedPath)
+		fmt.Println()
+	} else {
+		fmt.Printf("%s Skill not currently installed\n", green("✓"))
+	}
+
 	// Install to provider
 	fmt.Printf("%s Installing to provider '%s'...\n", cyan("→"), installProvider)
 
@@ -169,26 +240,23 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// installToClaude installs a skill to Claude (~/.claude/skills/)
-func installToClaude(s *skill.Skill) error {
-	// Get Claude skills directory
-	homeDir, err := os.UserHomeDir()
+// installToProvider installs a skill to a provider's skills directory
+func installToProvider(s *skill.Skill, provider string) error {
+	// Get provider skills directory
+	skillsDir, err := getProviderSkillsDir(provider)
 	if err != nil {
-		return fmt.Errorf("error getting home directory: %w", err)
+		return err
 	}
 
-	claudeSkillsDir := filepath.Join(homeDir, ".claude", "skills")
-	destPath := filepath.Join(claudeSkillsDir, s.Name)
+	destPath := filepath.Join(skillsDir, s.Name)
 
-	// Create Claude skills directory if it doesn't exist
-	if err := os.MkdirAll(claudeSkillsDir, 0755); err != nil {
-		return fmt.Errorf("error creating Claude skills directory: %w", err)
+	// Create skills directory if it doesn't exist
+	if err := os.MkdirAll(skillsDir, 0755); err != nil {
+		return fmt.Errorf("error creating %s skills directory: %w", provider, err)
 	}
 
-	// Check if skill already exists
+	// If skill already exists, remove it first (we already checked and got user consent)
 	if _, err := os.Stat(destPath); err == nil {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("%s Skill already exists at: %s\n", yellow("⚠"), destPath)
 		fmt.Println("  Removing existing installation...")
 		if err := os.RemoveAll(destPath); err != nil {
 			return fmt.Errorf("error removing existing skill: %w", err)
@@ -206,41 +274,14 @@ func installToClaude(s *skill.Skill) error {
 	return nil
 }
 
+// installToClaude installs a skill to Claude (~/.claude/skills/)
+func installToClaude(s *skill.Skill) error {
+	return installToProvider(s, "claude")
+}
+
 // installToCursor installs a skill to Cursor (~/.cursor/skills/)
 func installToCursor(s *skill.Skill) error {
-	// Get Cursor skills directory
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("error getting home directory: %w", err)
-	}
-
-	cursorSkillsDir := filepath.Join(homeDir, ".cursor", "skills")
-	destPath := filepath.Join(cursorSkillsDir, s.Name)
-
-	// Create Cursor skills directory if it doesn't exist
-	if err := os.MkdirAll(cursorSkillsDir, 0755); err != nil {
-		return fmt.Errorf("error creating Cursor skills directory: %w", err)
-	}
-
-	// Check if skill already exists
-	if _, err := os.Stat(destPath); err == nil {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("%s Skill already exists at: %s\n", yellow("⚠"), destPath)
-		fmt.Println("  Removing existing installation...")
-		if err := os.RemoveAll(destPath); err != nil {
-			return fmt.Errorf("error removing existing skill: %w", err)
-		}
-	}
-
-	// Copy skill directory
-	fmt.Printf("  Copying skill from: %s\n", s.Path)
-	fmt.Printf("  To: %s\n", destPath)
-
-	if err := copyDir(s.Path, destPath); err != nil {
-		return fmt.Errorf("error copying skill: %w", err)
-	}
-
-	return nil
+	return installToProvider(s, "cursor")
 }
 
 // copyDir recursively copies a directory
