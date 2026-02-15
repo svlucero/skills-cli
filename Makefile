@@ -1,7 +1,7 @@
 .PHONY: build install test clean run help
 
 # Variables
-BINARY_NAME=skill
+BINARY_NAME=skills
 BUILD_DIR=bin
 MAIN_PATH=cmd/skill/main.go
 INSTALL_PATH=$(GOPATH)/bin
