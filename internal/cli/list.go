@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/silvinalucero/skill_cli/internal/errors"
 	"github.com/silvinalucero/skill_cli/internal/git"
@@ -32,13 +33,15 @@ func getListHelp() string {
 		Item("--all", "List skills from all repositories").
 		Item("--installed", "List installed skills (requires --provider)").
 		Item("--provider <name>", "Provider to list from (claude, cursor)").
-		Item("-c, --compact", "Compact one-line-per-skill format").
+		Item("-c, --compact", "Compact non-interactive format").
 		Item("--no-update", "Skip repository update before listing").
 		Section("BEHAVIOR:").
 		BulletList([]string{
-			"By default, lists skills from the active repository",
+			"By default, lists skills from the active repository in interactive mode",
+			"Use arrow keys to navigate and Enter to select a skill",
 			"Repository is automatically updated (git pull) before listing",
 			"Use --no-update to skip the repository update",
+			"Use --compact for non-interactive output",
 			"Use --installed with --provider to see installed skills",
 		}).
 		Section("EXAMPLES:").
@@ -62,7 +65,7 @@ var listCmd = &cobra.Command{
 func init() {
 	listCmd.Flags().StringVar(&listRepo, "repo", "", "list skills from a specific repository")
 	listCmd.Flags().BoolVar(&listAll, "all", false, "list skills from all repositories")
-	listCmd.Flags().BoolVarP(&listCompact, "compact", "c", false, "compact format")
+	listCmd.Flags().BoolVarP(&listCompact, "compact", "c", false, "non-interactive compact format")
 	listCmd.Flags().BoolVar(&listNoUpdate, "no-update", false, "skip repository update before listing")
 	listCmd.Flags().BoolVar(&listInstalled, "installed", false, "list installed skills (requires --provider)")
 	listCmd.Flags().StringVar(&listProvider, "provider", "", "provider to list installed skills from (claude, cursor)")
@@ -202,17 +205,93 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display skills according to format
+	// Interactive mode is default, --compact disables it
 	if listCompact {
-		printSkillsCompact(skills, sourceDesc)
-	} else if listAll {
-		printSkillsByRepo(skills)
+		if listAll {
+			printSkillsByRepo(skills)
+		} else {
+			printSkillsCompact(skills, sourceDesc)
+		}
+
+		// Summary for non-interactive mode
+		fmt.Println()
+		fmt.Printf("%s Found %d skill(s)\n", dim("→"), len(skills))
 	} else {
-		printSkillsDetailed(skills, sourceDesc)
+		// Interactive mode (default)
+		return runListInteractive(skills, sourceDesc)
 	}
 
-	// Summary
+	return nil
+}
+
+// runListInteractive displays skills in an interactive list with cursor navigation
+func runListInteractive(skills []skill.Skill, source string) error {
+	cyan := color.New(color.FgCyan).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}",
+		Active:   "▸ {{ .Name | cyan }} {{ if eq .Status \"installed\" }}{{ \"✓\" | green }}{{ end }}",
+		Inactive: "  {{ .Name | white }} {{ if eq .Status \"installed\" }}{{ \"✓\" | green }}{{ end }}",
+		Selected: "{{ \"Selected:\" | green }} {{ .Name | cyan }}",
+		Details: `
+--------- Skill Details ---------
+{{ "Name:" | faint }}	{{ .Name }}
+{{ "Description:" | faint }}	{{ .Description }}
+{{ "Version:" | faint }}	{{ .Version }}
+{{ "Repository:" | faint }}	{{ .RepoName }}
+{{ "Status:" | faint }}	{{ .Status }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		skill := skills[index]
+		name := skill.Name
+		description := skill.Description
+
+		input = promptui.Styler(promptui.FGBold)(input)
+
+		if name == input || description == input {
+			return true
+		}
+
+		return false
+	}
+
+	prompt := promptui.Select{
+		Label:     fmt.Sprintf("%s from %s (Use ↑/↓ arrows, / to search, Enter to select, Ctrl+C to exit)", cyan("Skills"), source),
+		Items:     skills,
+		Templates: templates,
+		Size:      10,
+		Searcher:  searcher,
+	}
+
 	fmt.Println()
-	fmt.Printf("%s Found %d skill(s)\n", dim("→"), len(skills))
+	idx, _, err := prompt.Run()
+
+	if err != nil {
+		if err == promptui.ErrInterrupt {
+			fmt.Printf("\n%s Selection cancelled\n", yellow("⚠"))
+			return nil
+		}
+		return fmt.Errorf("prompt failed: %w", err)
+	}
+
+	selected := skills[idx]
+
+	fmt.Println()
+	fmt.Printf("%s Skill selected: %s\n", green("✓"), cyan(selected.Name))
+	fmt.Printf("  Description: %s\n", selected.Description)
+	if selected.Version != "" && selected.Version != "unknown" {
+		fmt.Printf("  Version: %s\n", dim(selected.Version))
+	}
+	fmt.Printf("  Repository: %s\n", selected.RepoName)
+	if selected.Status == skill.StatusInstalled {
+		fmt.Printf("  Status: %s\n", green(string(selected.Status)))
+	} else {
+		fmt.Printf("  Status: %s\n", selected.Status)
+	}
 
 	return nil
 }
@@ -237,33 +316,6 @@ func printSkillsCompact(skills []skill.Skill, source string) {
 		} else {
 			fmt.Printf("  %s - %s%s\n", s.Name, s.Description, statusStr)
 		}
-	}
-}
-
-// printSkillsDetailed prints skills in detailed format
-func printSkillsDetailed(skills []skill.Skill, source string) {
-	cyan := color.New(color.FgCyan).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
-
-	fmt.Printf("%s in %s:\n", cyan("Skills"), source)
-
-	for _, s := range skills {
-		fmt.Println()
-		fmt.Printf("  %s\n", cyan(s.Name))
-		fmt.Printf("    %s\n", s.Description)
-
-		// Version if available
-		if s.Version != "" && s.Version != "unknown" {
-			fmt.Printf("    Version: %s\n", dim(s.Version))
-		}
-
-		// Status
-		statusStr := string(s.Status)
-		if s.Status == skill.StatusInstalled {
-			statusStr = green(statusStr)
-		}
-		fmt.Printf("    Status: %s\n", statusStr)
 	}
 }
 
