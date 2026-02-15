@@ -45,16 +45,16 @@ Skills are self-contained directories with a standardized structure, making them
 
 ## Features
 
-✨ **Interactive UI** - Navigate through skills and repositories with arrow keys and real-time search
-📦 **Multiple Repositories** - Manage skills from different Git repositories simultaneously
-🔍 **Auto-discovery** - Automatically finds all skills (directories with `SKILL.md`)
-🚀 **Easy Installation** - Install skills to Claude Desktop or Cursor with one command
-🗑️ **Uninstall Support** - Remove installed skills interactively or directly
-🎯 **Repository Switching** - Quickly switch between different skill repositories
-🔐 **Flexible Auth** - Supports both HTTPS and SSH for Git operations
-✅ **Validation** - Validates repository access before adding
-🎨 **Beautiful UI** - Colored output and intuitive prompts
-⚙️ **XDG Compliant** - Follows XDG Base Directory Specification
+- ✨ **Interactive UI** - Navigate through skills and repositories with arrow keys and real-time search
+- 📦 **Multiple Repositories** - Manage skills from different Git repositories simultaneously
+- 🔍 **Auto-discovery** - Automatically finds all skills (directories with `SKILL.md`)
+- 🚀 **Easy Installation** - Install skills to Claude Desktop or Cursor with one command
+- 🗑️ **Uninstall Support** - Remove installed skills interactively or directly
+- 🎯 **Repository Switching** - Quickly switch between different skill repositories
+- 🔐 **Flexible Auth** - Supports both HTTPS and SSH for Git operations
+- ✅ **Validation** - Validates repository access before adding
+- 🎨 **Beautiful UI** - Colored output and intuitive prompts
+- ⚙️ **XDG Compliant** - Follows XDG Base Directory Specification
 
 ## Installation
 
