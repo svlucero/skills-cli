@@ -140,16 +140,19 @@ func getRepositoryRemoveHelp() string {
 	return NewHelpBuilder().
 		Description("Remove a repository from configuration.").
 		Section("PARAMETERS:").
-		Item(yellow("<name>"), "Name of the repository to remove (required)").
+		Item(yellow("<name>"), "Name of the repository to remove (optional - interactive if omitted)").
 		Section("FLAGS:").
 		Item("--keep-local", "Keep local repository files, only remove from config").
 		Section("BEHAVIOR:").
 		BulletList([]string{
+			"If no name provided, shows interactive list to select from",
+			"Use arrow keys to navigate and Enter to select a repository",
 			"Removes repository from configuration",
 			"Deletes local repository files (unless --keep-local)",
 			"Cannot remove the active repository (switch first)",
 		}).
 		Section("EXAMPLES:").
+		Example("skill repository remove", "# Interactive selection").
 		Example("skill repository remove oldrepo", "# Remove repo and local files").
 		Example("skill repository remove oldrepo --keep-local", "# Remove from config only").
 		Build()
@@ -157,10 +160,10 @@ func getRepositoryRemoveHelp() string {
 
 // repositoryRemoveCmd removes a repository
 var repositoryRemoveCmd = &cobra.Command{
-	Use:   "remove <name> [flags]",
+	Use:   "remove [name] [flags]",
 	Short: "Remove a repository",
 	Long:  getRepositoryRemoveHelp(),
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runRepositoryRemove,
 }
 
@@ -641,26 +644,67 @@ func runRepositoryList(cmd *cobra.Command, args []string) error {
 }
 
 func runRepositoryRemove(cmd *cobra.Command, args []string) error {
-	repoName := args[0]
-
-	// Colors for output
 	green := color.New(color.FgGreen).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
 
-	// Check configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
 		return errors.ErrConfigNotFound
 	}
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("%s Error loading configuration: %v\n", red("✗"), err)
 		return err
 	}
 
-	// Get repository before removing (to have the path)
+	if len(cfg.Repositories) == 0 {
+		fmt.Printf("%s No repositories configured\n", yellow("⚠"))
+		return errors.ErrRepoNotFound
+	}
+
+	var repoName string
+
+	if len(args) == 0 {
+		// No repository name provided - interactive mode
+		var repos []repositoryItem
+		for name, repo := range cfg.Repositories {
+			skillsDisplay := repo.SkillsPath
+			if skillsDisplay == "" {
+				skillsDisplay = "/"
+			}
+
+			repos = append(repos, repositoryItem{
+				Name:       name,
+				URL:        repo.URL,
+				AuthType:   repo.AuthType,
+				SkillsPath: skillsDisplay,
+				IsActive:   name == cfg.ActiveRepo,
+				IsCloned:   git.RepoExists(repo.LocalPath),
+				LocalPath:  repo.LocalPath,
+			})
+		}
+
+		selected, err := selectRepositoryInteractive(repos, "Select repository to remove")
+		if err != nil {
+			return err
+		}
+
+		repoName = selected.Name
+
+		if selected.IsActive {
+			fmt.Printf("\n%s Cannot remove the active repository\n", red("✗"))
+			fmt.Println("\nTo remove the active repository:")
+			fmt.Println("  1. Switch to another repository: skill repository set-current <other-name>")
+			fmt.Printf("  2. Remove this repository: skill repository remove %s\n", repoName)
+			return errors.ErrRepoNotFound
+		}
+	} else {
+		// Repository name provided - traditional mode
+		repoName = args[0]
+	}
+
 	repo, err := config.GetRepo(cfg, repoName)
 	if err != nil {
 		fmt.Printf("%s Repository '%s' not found\n", red("✗"), repoName)
