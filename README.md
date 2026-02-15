@@ -58,19 +58,38 @@ Skills are self-contained directories with a standardized structure, making them
 
 ## Installation
 
-### 📦 Download Pre-built Binary (Recommended)
+### 🚀 Quick Install (Recommended)
 
-The easiest way to install Skills CLI is to download a pre-built binary from the [releases page](https://github.com/svlucero/skills-cli/releases/latest).
+**One-line install for macOS and Linux:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/svlucero/skills-cli/main/install.sh | bash
+```
+
+This script will automatically:
+- Detect your operating system and architecture
+- Download the latest release
+- Install to `/usr/local/bin`
+- Verify the installation
+
+---
+
+### 📦 Manual Installation
+
+<details>
+<summary>Download pre-built binary manually</summary>
 
 #### macOS
 
 ```bash
 # Intel Mac (x86_64)
 curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Darwin_x86_64 -o skills
+chmod +x skills
 sudo mv skills /usr/local/bin/
 
 # Apple Silicon (arm64)
 curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Darwin_arm64 -o skills
+chmod +x skills
 sudo mv skills /usr/local/bin/
 ```
 
@@ -78,11 +97,13 @@ sudo mv skills /usr/local/bin/
 
 ```bash
 # x86_64
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Linux_x86_64.tar.gz | tar xz
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Linux_x86_64 -o skills
+chmod +x skills
 sudo mv skills /usr/local/bin/
 
 # arm64
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Linux_arm64.tar.gz | tar xz
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Linux_arm64 -o skills
+chmod +x skills
 sudo mv skills /usr/local/bin/
 ```
 
@@ -95,6 +116,8 @@ Download the `.zip` file for your architecture from the [releases page](https://
 ```bash
 skills --version
 ```
+
+</details>
 
 ---
 
@@ -144,24 +167,20 @@ To use Skills CLI, you need:
 ## Quick Start
 
 ```bash
-# 1. Download and install (see Installation section above)
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Darwin_arm64.tar.gz | tar xz
-sudo mv skills /usr/local/bin/
+# 1. Install Skills CLI
+curl -fsSL https://raw.githubusercontent.com/svlucero/skills-cli/main/install.sh | bash
 
-# 2. Verify installation
-skills --version
-
-# 3. Add your first repository
+# 2. Add your first repository
 skills repository add myrepo https://github.com/org/skills-repo.git
 
-# 4. List available skills (interactive mode)
-skills list
+# 3. List available skills (interactive mode)
+skills list --all
 
-# 5. Install a skill (interactive mode)
+# 4. Install a skill (interactive mode)
 skills install
 
-# 6. View installed skills
-skills list --installed --provider claude
+# 5. View installed skills
+skills list
 ```
 
 ## Usage
