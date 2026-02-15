@@ -12,6 +12,11 @@ var (
 	// Persistent flags
 	cfgFile string
 	verbose bool
+
+	// Version information
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
 )
 
 // getColoredHelp returns the colored help text for the root command
@@ -70,11 +75,34 @@ var rootCmd = &cobra.Command{
 	Use:   "skills [command]",
 	Short: "Skills manager from Git repositories",
 	Long:  getColoredHelp(),
-	Version: "0.1.0",
+}
+
+// SetVersion sets the version information
+func SetVersion(v, c, d string) {
+	version = v
+	commit = c
+	date = d
+	rootCmd.Version = buildVersion()
+}
+
+// buildVersion returns the version string
+func buildVersion() string {
+	result := version
+	if commit != "none" {
+		result += fmt.Sprintf(" (%s)", commit[:7])
+	}
+	if date != "unknown" {
+		result += fmt.Sprintf(" - %s", date)
+	}
+	return result
 }
 
 // Execute runs the root command
 func Execute() error {
+	// Set initial version if not already set
+	if rootCmd.Version == "" {
+		rootCmd.Version = buildVersion()
+	}
 	return rootCmd.Execute()
 }
 

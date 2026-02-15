@@ -1,8 +1,9 @@
 # Binaries
 build/
 bin/
-skill
-skills
+/skill
+/skills
+dist/
 *.exe
 *.dll
 *.so

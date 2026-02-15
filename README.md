@@ -5,6 +5,8 @@
 [![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub release](https://img.shields.io/github/v/release/svlucero/skills-cli)](https://github.com/svlucero/skills-cli/releases)
+[![Test](https://github.com/svlucero/skills-cli/actions/workflows/test.yml/badge.svg)](https://github.com/svlucero/skills-cli/actions/workflows/test.yml)
+[![Release](https://github.com/svlucero/skills-cli/actions/workflows/release.yml/badge.svg)](https://github.com/svlucero/skills-cli/actions/workflows/release.yml)
 
 ## 📖 Table of Contents
 
@@ -52,11 +54,28 @@ Skills are self-contained directories with a standardized structure, making them
 
 ## Installation
 
-### Prerequisites
+### Download Binary (Recommended)
 
-- **Go 1.24+** - [Install Go](https://golang.org/doc/install)
-- **Git** - Must be installed and available in PATH
-- **gh CLI** (optional) - Required only for the `share` command
+Download the latest release for your platform from [GitHub Releases](https://github.com/svlucero/skills-cli/releases):
+
+```bash
+# Linux/macOS
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_<version>_<os>_<arch>.tar.gz | tar xz
+sudo mv skills /usr/local/bin/
+
+# Or manually download from releases page
+```
+
+Available platforms:
+- Linux (x86_64, arm64)
+- macOS (x86_64, arm64)
+- Windows (x86_64)
+
+### Using Go Install
+
+```bash
+go install github.com/svlucero/skills-cli/cmd/skill@latest
+```
 
 ### From Source
 
@@ -74,12 +93,11 @@ make install
 
 The binary will be available as `skills` in your `$GOPATH/bin` (make sure it's in your `PATH`).
 
-### Build Only
+### Prerequisites
 
-```bash
-make build
-# Binary will be in bin/skills
-```
+- **Git** - Must be installed and available in PATH
+- **gh CLI** (optional) - Required only for the `share` command
+- **Go 1.24+** (only for building from source)
 
 ## Quick Start
 

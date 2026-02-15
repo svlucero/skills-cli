@@ -1,0 +1,156 @@
+# GoReleaser configuration
+# https://goreleaser.com
+
+version: 2
+
+project_name: skills
+
+before:
+  hooks:
+    # Run tests before building
+    - go test ./...
+    # Generate module files
+    - go mod tidy
+
+builds:
+  - id: skills
+    main: ./cmd/skill
+    binary: skills
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Ignore combinations that don't make sense
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: skills
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - CONTRIBUTING.md
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'merge conflict'
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: 'New Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 2
+    - title: 'Refactors'
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 3
+    - title: 'Documentation'
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 4
+    - title: 'Other Changes'
+      order: 999
+
+release:
+  github:
+    owner: svlucero
+    name: skills-cli
+  draft: false
+  prerelease: auto
+  mode: append
+  header: |
+    ## Skills CLI {{ .Tag }} ({{ .Date }})
+
+    Welcome to this new release of Skills CLI! 🎉
+  footer: |
+    ---
+
+    **Full Changelog**: https://github.com/svlucero/skills-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ## Installation
+
+    ### Binary Download
+
+    Download the appropriate binary for your platform from the assets below.
+
+    ### Using Go
+
+    ```bash
+    go install github.com/svlucero/skills-cli/cmd/skill@{{ .Tag }}
+    ```
+
+    ### From Source
+
+    ```bash
+    git clone https://github.com/svlucero/skills-cli.git
+    cd skills-cli
+    git checkout {{ .Tag }}
+    make build
+    ```
+
+# Generate completions for shells
+# Uncomment when shell completions are implemented
+# completions:
+#   - id: skills
+#     ids:
+#       - skills
+#     dir: completions
+#     cmd: skills completion
+
+# Homebrew tap (optional - uncomment to enable)
+# brews:
+#   - name: skills
+#     tap:
+#       owner: svlucero
+#       name: homebrew-tap
+#     folder: Formula
+#     homepage: https://github.com/svlucero/skills-cli
+#     description: A powerful CLI for managing skills stored in Git repositories
+#     license: MIT
+#     test: |
+#       system "#{bin}/skills --version"
+#     install: |
+#       bin.install "skills"
