@@ -16,41 +16,39 @@ import (
 )
 
 var (
-	listRepo      string
-	listAll       bool
-	listCompact   bool
-	listNoUpdate  bool
-	listInstalled bool
-	listProvider  string
+	listRepo     string
+	listAll      bool
+	listCompact  bool
+	listNoUpdate bool
+	listProvider string
 )
 
 // getListHelp returns colored help text for list command
 func getListHelp() string {
 	return NewHelpBuilder().
-		Description("List available skills from repositories or installed skills from a provider.").
+		Description("List installed skills or available skills from repositories.").
 		Section("FLAGS:").
+		Item("--all", "List all available skills from repositories (updates repos)").
 		Item("--repo <name>", "List skills from a specific repository").
-		Item("--all", "List skills from all repositories").
-		Item("--installed", "List installed skills (requires --provider)").
-		Item("--provider <name>", "Provider to list from (claude, cursor)").
+		Item("--provider <name>", "Provider to list from (claude, cursor). Default: claude").
 		Item("-c, --compact", "Compact non-interactive format").
 		Item("--no-update", "Skip repository update before listing").
 		Section("BEHAVIOR:").
 		BulletList([]string{
-			"By default, lists skills from the active repository in interactive mode",
-			"Use arrow keys to navigate and Enter to select a skill",
-			"Repository is automatically updated (git pull) before listing",
-			"Use --no-update to skip the repository update",
+			"By default, lists installed skills from Claude",
+			"Use --all to see all available skills from repositories",
+			"Use --provider to list installed skills from other providers",
+			"Repositories are automatically updated before listing (use --no-update to skip)",
+			"Use arrow keys to navigate and Enter to select a skill in interactive mode",
 			"Use --compact for non-interactive output",
-			"Use --installed with --provider to see installed skills",
 		}).
 		Section("EXAMPLES:").
-		Example("skills list", "# List from active repo").
+		Example("skills list", "# List installed skills (Claude)").
+		Example("skills list --provider cursor", "# List installed in Cursor").
+		Example("skills list --all", "# List all available skills").
 		Example("skills list --repo myrepo", "# List from specific repo").
-		Example("skills list --all", "# List from all repos").
-		Example("skills list --installed --provider claude", "# List installed in Claude").
 		Example("skills list --compact", "# Compact format").
-		Example("skills list --no-update", "# Skip repo update").
+		Example("skills list --all --no-update", "# Skip repo update").
 		Build()
 }
 
@@ -64,11 +62,10 @@ var listCmd = &cobra.Command{
 
 func init() {
 	listCmd.Flags().StringVar(&listRepo, "repo", "", "list skills from a specific repository")
-	listCmd.Flags().BoolVar(&listAll, "all", false, "list skills from all repositories")
+	listCmd.Flags().BoolVar(&listAll, "all", false, "list all available skills from repositories")
 	listCmd.Flags().BoolVarP(&listCompact, "compact", "c", false, "non-interactive compact format")
 	listCmd.Flags().BoolVar(&listNoUpdate, "no-update", false, "skip repository update before listing")
-	listCmd.Flags().BoolVar(&listInstalled, "installed", false, "list installed skills (requires --provider)")
-	listCmd.Flags().StringVar(&listProvider, "provider", "", "provider to list installed skills from (claude, cursor)")
+	listCmd.Flags().StringVar(&listProvider, "provider", "", "provider to list installed skills from (default: claude)")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -78,22 +75,17 @@ func runList(cmd *cobra.Command, args []string) error {
 	red := color.New(color.FgRed).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
 
-	// If --installed is used, --provider is required
-	if listInstalled {
-		if listProvider == "" {
-			fmt.Printf("%s --installed requires --provider to be specified\n", red("✗"))
-			fmt.Println("\nSupported providers:")
-			fmt.Println("  - claude")
-			fmt.Println("  - cursor")
-			fmt.Println("\nExample: skills list --installed --provider claude")
-			return fmt.Errorf("missing required flag: --provider")
+	// Default behavior: list installed skills from Claude (unless --all or --repo is specified)
+	if !listAll && listRepo == "" {
+		// Use provider flag if specified, otherwise default to claude
+		provider := listProvider
+		if provider == "" {
+			provider = "claude"
 		}
-
-		// List installed skills
-		return runListInstalled(listProvider, listCompact)
+		return runListInstalled(provider, listCompact)
 	}
 
-	// Check configuration exists (only for repository listing)
+	// For --all or --repo, we need configuration
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
 		fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
