@@ -2,11 +2,13 @@
 
 > A powerful command-line tool for managing skills stored in Git repositories
 
-[![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://golang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/v/release/svlucero/skills-cli)](https://github.com/svlucero/skills-cli/releases)
+[![GitHub release](https://img.shields.io/github/v/release/svlucero/skills-cli?style=for-the-badge&logo=github)](https://github.com/svlucero/skills-cli/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/svlucero/skills-cli/total?style=for-the-badge&logo=github)](https://github.com/svlucero/skills-cli/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
 [![Test](https://github.com/svlucero/skills-cli/actions/workflows/test.yml/badge.svg)](https://github.com/svlucero/skills-cli/actions/workflows/test.yml)
 [![Release](https://github.com/svlucero/skills-cli/actions/workflows/release.yml/badge.svg)](https://github.com/svlucero/skills-cli/actions/workflows/release.yml)
+[![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://golang.org)
 
 ## 📖 Table of Contents
 
@@ -32,6 +34,8 @@
 
 Skills are self-contained directories with a standardized structure, making them easy to share, install, and manage across projects and teams.
 
+> 💡 **Ready to use!** Pre-built binaries are available for Linux, macOS, and Windows. No compilation needed - just [download and run](https://github.com/svlucero/skills-cli/releases/latest)!
+
 ## Demo
 
 <!-- Replace this comment with your demo GIF -->
@@ -54,30 +58,60 @@ Skills are self-contained directories with a standardized structure, making them
 
 ## Installation
 
-### Download Binary (Recommended)
+### 📦 Download Pre-built Binary (Recommended)
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/svlucero/skills-cli/releases):
+The easiest way to install Skills CLI is to download a pre-built binary from the [releases page](https://github.com/svlucero/skills-cli/releases/latest).
+
+#### macOS
 
 ```bash
-# Linux/macOS
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_<version>_<os>_<arch>.tar.gz | tar xz
+# Intel Mac (x86_64)
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Darwin_x86_64.tar.gz | tar xz
 sudo mv skills /usr/local/bin/
 
-# Or manually download from releases page
+# Apple Silicon (arm64)
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Darwin_arm64.tar.gz | tar xz
+sudo mv skills /usr/local/bin/
 ```
 
-Available platforms:
-- Linux (x86_64, arm64)
-- macOS (x86_64, arm64)
-- Windows (x86_64)
+#### Linux
 
-### Using Go Install
+```bash
+# x86_64
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Linux_x86_64.tar.gz | tar xz
+sudo mv skills /usr/local/bin/
+
+# arm64
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Linux_arm64.tar.gz | tar xz
+sudo mv skills /usr/local/bin/
+```
+
+#### Windows
+
+Download the `.zip` file for your architecture from the [releases page](https://github.com/svlucero/skills-cli/releases/latest) and extract it to a directory in your PATH.
+
+#### Verify Installation
+
+```bash
+skills --version
+```
+
+---
+
+### 🛠️ Alternative Installation Methods
+
+<details>
+<summary>Install using Go (requires Go 1.24+)</summary>
 
 ```bash
 go install github.com/svlucero/skills-cli/cmd/skill@latest
 ```
 
-### From Source
+Note: The binary will be installed as `skill` (not `skills`) in your `$GOPATH/bin`.
+</details>
+
+<details>
+<summary>Build from source (for development)</summary>
 
 ```bash
 # Clone the repository
@@ -91,27 +125,42 @@ make build
 make install
 ```
 
-The binary will be available as `skills` in your `$GOPATH/bin` (make sure it's in your `PATH`).
+**Prerequisites for building from source:**
+- Go 1.24 or higher
+- Git
+- Make
 
-### Prerequisites
+</details>
 
-- **Git** - Must be installed and available in PATH
-- **gh CLI** (optional) - Required only for the `share` command
-- **Go 1.24+** (only for building from source)
+---
+
+### 📋 Requirements
+
+To use Skills CLI, you need:
+
+- **Git** - For cloning and managing skill repositories
+- **gh CLI** (optional) - Required only for the `share` command to create PRs
 
 ## Quick Start
 
 ```bash
-# 1. Add your first repository
+# 1. Download and install (see Installation section above)
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Darwin_arm64.tar.gz | tar xz
+sudo mv skills /usr/local/bin/
+
+# 2. Verify installation
+skills --version
+
+# 3. Add your first repository
 skills repository add myrepo https://github.com/org/skills-repo.git
 
-# 2. List available skills (interactive)
+# 4. List available skills (interactive mode)
 skills list
 
-# 3. Install a skill (interactive)
+# 5. Install a skill (interactive mode)
 skills install
 
-# 4. List installed skills
+# 6. View installed skills
 skills list --installed --provider claude
 ```
 
