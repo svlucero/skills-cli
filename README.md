@@ -313,6 +313,8 @@ Verifies that the active repository is accessible with current credentials.
 
 ## Skill Structure
 
+> 📚 For detailed information on creating skills, see the [official Claude Skills documentation](https://docs.anthropic.com/en/docs/build-with-claude/claude-for-code/skills).
+
 ### Repository Structure
 
 Skills are stored as individual directories in a Git repository. Each skill must contain a `SKILL.md` file.
