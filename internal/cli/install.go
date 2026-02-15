@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/silvinalucero/skill_cli/internal/errors"
 	"github.com/silvinalucero/skill_cli/internal/skill"
@@ -28,7 +29,7 @@ func getInstallHelp() string {
 	return NewHelpBuilder().
 		Description("Install a skill from a repository to a provider.").
 		Section("PARAMETERS:").
-		Item(yellow("<skill-name>"), "Name of the skill to install (required)").
+		Item(yellow("<skill-name>"), "Name of the skill to install (optional - interactive if omitted)").
 		Section("FLAGS:").
 		Item("--repo <name>", "Repository to install from (default: active repo)").
 		Item("--provider <name>", "Provider to install to (default: claude)").
@@ -37,6 +38,8 @@ func getInstallHelp() string {
 		Item("--skip-existing", "Skip installation if already installed (useful for batch installs)").
 		Section("BEHAVIOR:").
 		BulletList([]string{
+			"If no skill name provided, shows interactive list to select from",
+			"Use arrow keys to navigate and Enter to select a skill",
 			"Checks if skill is already installed before installing",
 			"Shows version information if available",
 			"Prompts before overwriting existing installations",
@@ -45,6 +48,8 @@ func getInstallHelp() string {
 			"For Cursor: ~/.cursor/skills/<skill-name>/",
 		}).
 		Section("EXAMPLES:").
+		Example("skill install", "# Interactive - select from active repo").
+		Example("skill install --repo myrepo", "# Interactive - select from specific repo").
 		Example("skill install explain-code", "# Install to Claude from active repo").
 		Example("skill install explain-code --repo myrepo", "# Install from specific repo").
 		Example("skill install explain-code --provider cursor", "# Install to Cursor").
@@ -54,10 +59,10 @@ func getInstallHelp() string {
 
 // installCmd represents the install command
 var installCmd = &cobra.Command{
-	Use:   "install <skill-name> [flags]",
+	Use:   "install [skill-name] [flags]",
 	Short: "Install a skill to a provider",
 	Long:  getInstallHelp(),
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runInstall,
 }
 
@@ -89,12 +94,11 @@ func checkSkillInstalled(skillName, provider string) (bool, string, error) {
 }
 
 func runInstall(cmd *cobra.Command, args []string) error {
-	skillName := args[0]
-
 	// Colors for output
 	green := color.New(color.FgGreen).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
 	cyan := color.New(color.FgCyan).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
 
 	// Check configuration exists
 	if !config.Exists() {
@@ -129,29 +133,58 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get all skills from the repository
-	fmt.Printf("%s Looking for skill '%s' in repository '%s'...\n", cyan("→"), skillName, repoName)
-	skills, err := skill.GetSkillsFromRepo(cfg, repoName)
-	if err != nil {
-		fmt.Printf("%s Error reading skills: %v\n", red("✗"), err)
-		return err
-	}
-
-	// Find the skill
+	var skillName string
 	var targetSkill *skill.Skill
-	for i := range skills {
-		if skills[i].Name == skillName {
-			targetSkill = &skills[i]
-			break
-		}
-	}
 
-	if targetSkill == nil {
-		fmt.Printf("%s Skill '%s' not found in repository '%s'\n", red("✗"), skillName, repoName)
-		fmt.Println("\nAvailable skills:")
-		for _, s := range skills {
-			fmt.Printf("  - %s\n", s.Name)
+	if len(args) == 0 {
+		// No skill name provided - interactive mode
+		fmt.Printf("%s Loading skills from repository '%s'...\n", cyan("→"), repoName)
+		skills, err := skill.GetSkillsFromRepo(cfg, repoName)
+		if err != nil {
+			fmt.Printf("%s Error reading skills: %v\n", red("✗"), err)
+			return err
 		}
-		return fmt.Errorf("skill not found")
+
+		if len(skills) == 0 {
+			fmt.Printf("%s No skills found in repository '%s'\n", yellow("⚠"), repoName)
+			return fmt.Errorf("no skills available")
+		}
+
+		// Interactive selection
+		selected, err := selectSkillInteractive(skills, repoName)
+		if err != nil {
+			return err
+		}
+
+		targetSkill = selected
+		skillName = selected.Name
+	} else {
+		// Skill name provided - traditional mode
+		skillName = args[0]
+
+		fmt.Printf("%s Looking for skill '%s' in repository '%s'...\n", cyan("→"), skillName, repoName)
+		skills, err := skill.GetSkillsFromRepo(cfg, repoName)
+		if err != nil {
+			fmt.Printf("%s Error reading skills: %v\n", red("✗"), err)
+			return err
+		}
+
+		// Find the skill
+		for i := range skills {
+			if skills[i].Name == skillName {
+				targetSkill = &skills[i]
+				break
+			}
+		}
+
+		if targetSkill == nil {
+			fmt.Printf("%s Skill '%s' not found in repository '%s'\n", red("✗"), skillName, repoName)
+			fmt.Println("\nAvailable skills:")
+			for _, s := range skills {
+				fmt.Printf("  - %s\n", s.Name)
+			}
+			return fmt.Errorf("skill not found")
+		}
 	}
 
 	fmt.Printf("%s Found skill: %s\n", green("✓"), targetSkill.Name)
@@ -356,4 +389,71 @@ func copyFile(src, dst string) error {
 	}
 
 	return nil
+}
+
+// selectSkillInteractive displays an interactive list to select a skill
+func selectSkillInteractive(skills []skill.Skill, repoName string) (*skill.Skill, error) {
+	cyan := color.New(color.FgCyan).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}",
+		Active:   "▸ {{ .Name | cyan }} {{ if eq .Status \"installed\" }}{{ \"✓\" | green }}{{ end }}",
+		Inactive: "  {{ .Name | white }} {{ if eq .Status \"installed\" }}{{ \"✓\" | green }}{{ end }}",
+		Selected: "{{ \"Selected:\" | green }} {{ .Name | cyan }}",
+		Details: `
+--------- Skill Details ---------
+{{ "Name:" | faint }}	{{ .Name }}
+{{ "Description:" | faint }}	{{ .Description }}
+{{ "Version:" | faint }}	{{ .Version }}
+{{ "Repository:" | faint }}	{{ .RepoName }}
+{{ "Status:" | faint }}	{{ .Status }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		skill := skills[index]
+		name := skill.Name
+		description := skill.Description
+
+		input = promptui.Styler(promptui.FGBold)(input)
+
+		if name == input || description == input {
+			return true
+		}
+
+		return false
+	}
+
+	prompt := promptui.Select{
+		Label:     fmt.Sprintf("%s from %s (Use ↑/↓ arrows, / to search, Enter to select, Ctrl+C to exit)", cyan("Select skill to install"), repoName),
+		Items:     skills,
+		Templates: templates,
+		Size:      10,
+		Searcher:  searcher,
+	}
+
+	fmt.Println()
+	idx, _, err := prompt.Run()
+
+	if err != nil {
+		if err == promptui.ErrInterrupt {
+			fmt.Printf("\n%s Installation cancelled\n", yellow("⚠"))
+			return nil, fmt.Errorf("installation cancelled")
+		}
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	selected := &skills[idx]
+
+	fmt.Println()
+	fmt.Printf("%s Skill selected: %s\n", green("✓"), cyan(selected.Name))
+	fmt.Printf("  Description: %s\n", selected.Description)
+	if selected.Version != "" && selected.Version != "unknown" {
+		fmt.Printf("  Version: %s\n", dim(selected.Version))
+	}
+	fmt.Println()
+
+	return selected, nil
 }
