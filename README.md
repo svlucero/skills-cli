@@ -1,36 +1,69 @@
-# skill CLI
+# Skills CLI
 
-Skills manager from Git repositories.
+> A powerful command-line tool for managing skills stored in Git repositories
 
-## Description
+[![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://golang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/svlucero/skills-cli)](https://github.com/svlucero/skills-cli/releases)
 
-`skill` is a command-line tool written in Go that allows you to manage "skills" stored in Git repositories. Skills are reusable code snippets, scripts, and documentation organized in a standardized directory structure with a `SKILL.md` file containing metadata and instructions.
+## 📖 Table of Contents
 
-Each skill is a self-contained directory with:
-- **SKILL.md**: Documentation and metadata (required)
-- **scripts/**: Executable code (optional)
-- **references/**: Additional documentation (optional)
-- **assets/**: Templates and resources (optional)
+- [Overview](#overview)
+- [Demo](#demo)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+  - [Repository Management](#repository-management)
+  - [Skill Management](#skill-management)
+  - [Configuration](#configuration)
+- [Skill Structure](#skill-structure)
+- [Interactive Mode](#interactive-mode)
+- [Contributing](#contributing)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## Overview
+
+**Skills CLI** is a modern command-line tool written in Go that helps you manage reusable code snippets, scripts, and documentation (called "skills") stored in Git repositories. It features an interactive UI, supports multiple repositories, and integrates seamlessly with Claude Desktop and Cursor.
+
+Skills are self-contained directories with a standardized structure, making them easy to share, install, and manage across projects and teams.
+
+## Demo
+
+<!-- Replace this comment with your demo GIF -->
+<!-- ![Demo](assets/demo.gif) -->
+
+**Demo coming soon!** - A GIF demonstration of the interactive features will be added here.
 
 ## Features
 
-- 📦 **Multiple repositories**: Manage skills from different Git repositories
-- 🔍 **Automatic discovery**: Scans repositories for skills (any directory with `SKILL.md`)
-- 🚀 **Easy installation**: Install skills to Claude Desktop or Cursor with one command
-- 🤝 **Sharing**: Fork repositories and create PRs to contribute skills
-- 🔐 **Flexible authentication**: Supports both HTTPS and SSH for Git operations
-- ✅ **Validation**: Automatically validates skill structure before sharing
-- 🎨 **Colored output**: Beautiful terminal UI for better user experience
-- ⚙️ **XDG compliant**: Configuration follows XDG Base Directory Specification
+✨ **Interactive UI** - Navigate through skills and repositories with arrow keys and real-time search
+📦 **Multiple Repositories** - Manage skills from different Git repositories simultaneously
+🔍 **Auto-discovery** - Automatically finds all skills (directories with `SKILL.md`)
+🚀 **Easy Installation** - Install skills to Claude Desktop or Cursor with one command
+🗑️ **Uninstall Support** - Remove installed skills interactively or directly
+🎯 **Repository Switching** - Quickly switch between different skill repositories
+🔐 **Flexible Auth** - Supports both HTTPS and SSH for Git operations
+✅ **Validation** - Validates repository access before adding
+🎨 **Beautiful UI** - Colored output and intuitive prompts
+⚙️ **XDG Compliant** - Follows XDG Base Directory Specification
 
 ## Installation
 
-### From source
+### Prerequisites
+
+- **Go 1.24+** - [Install Go](https://golang.org/doc/install)
+- **Git** - Must be installed and available in PATH
+- **gh CLI** (optional) - Required only for the `share` command
+
+### From Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/silvinalucero/skill_cli.git
-cd skill_cli
+git clone https://github.com/svlucero/skills-cli.git
+cd skills-cli
 
 # Build the binary
 make build
@@ -39,95 +72,210 @@ make build
 make install
 ```
 
-### Requirements
+The binary will be available as `skills` in your `$GOPATH/bin` (make sure it's in your `PATH`).
 
-- Go 1.23 or higher
-- Git installed and available in PATH
+### Build Only
+
+```bash
+make build
+# Binary will be in bin/skills
+```
+
+## Quick Start
+
+```bash
+# 1. Add your first repository
+skills repository add myrepo https://github.com/org/skills-repo.git
+
+# 2. List available skills (interactive)
+skills list
+
+# 3. Install a skill (interactive)
+skills install
+
+# 4. List installed skills
+skills list --installed --provider claude
+```
 
 ## Usage
 
-### Initialize with a repository
+### Repository Management
+
+#### Add a Repository
 
 ```bash
-# With HTTPS repository
-skill init https://github.com/org/skills-repo.git
+# Add with HTTPS
+skills repository add myrepo https://github.com/org/skills-repo.git
 
-# With SSH repository
-skill init git@github.com:org/skills-repo.git
+# Add with SSH
+skills repository add myrepo git@github.com:org/skills-repo.git
 
-# Force overwrite existing configuration
-skill init https://github.com/org/skills-repo.git --force
+# Add and set as active
+skills repository add myrepo https://github.com/org/repo.git --set-current
 
-# Skip repository verification (not recommended)
-skill init https://github.com/org/skills-repo.git --skip-verify
+# Add with custom skills path (if skills are in a subdirectory)
+skills repository add myrepo https://github.com/org/repo.git --skills-path skills
+
+# Force overwrite existing
+skills repository add myrepo https://github.com/org/repo.git --force
 ```
 
-### View current configuration
+#### List Repositories (Interactive)
 
 ```bash
-skill config show
+# Interactive selection
+skills repository list
 ```
 
-Shows:
-- Repository URL
-- Local path of cloned repository
-- Authentication type (https/ssh)
-- Last verification
-- Local repository status
+Navigate with ↑/↓ arrows, search with `/`, press Enter to select.
 
-### Change repository
+#### Set Current Repository (Interactive)
 
 ```bash
-skill config set-repo https://github.com/org/new-repo.git
+# Interactive selection
+skills repository set-current
 
-# Without verifying the new repository
-skill config set-repo https://github.com/org/new-repo.git --no-verify
+# Direct selection
+skills repository set-current myrepo
 ```
 
-### Verify repository access
+#### Remove Repository (Interactive)
 
 ```bash
-skill config verify
+# Interactive selection
+skills repository remove
+
+# Direct removal
+skills repository remove oldrepo
+
+# Remove from config but keep local files
+skills repository remove oldrepo --keep-local
 ```
 
-Verifies that the configured repository is accessible with your current credentials.
+#### Update Repository
 
-## File Structure
+```bash
+# Update skills path for a repository
+skills repository update myrepo --skills-path skills
+```
+
+### Skill Management
+
+#### List Skills (Interactive)
+
+```bash
+# List from active repository (interactive)
+skills list
+
+# List from specific repository
+skills list --repo myrepo
+
+# List from all repositories
+skills list --all
+
+# Compact format (non-interactive)
+skills list --compact
+
+# Skip git pull before listing
+skills list --no-update
+
+# List installed skills
+skills list --installed --provider claude
+skills list --installed --provider cursor
+```
+
+#### Install Skills (Interactive)
+
+```bash
+# Interactive selection from active repository
+skills install
+
+# Interactive selection from specific repository
+skills install --repo myrepo
+
+# Direct install
+skills install explain-code
+
+# Install to specific provider
+skills install explain-code --provider cursor
+
+# Install from specific repository
+skills install explain-code --repo myrepo
+
+# Force reinstall
+skills install explain-code --force
+```
+
+#### Uninstall Skills (Interactive)
+
+```bash
+# Interactive selection
+skills uninstall
+
+# Interactive from specific provider
+skills uninstall --provider cursor
+
+# Direct uninstall
+skills uninstall explain-code
+
+# Uninstall without confirmation
+skills uninstall explain-code --force
+```
 
 ### Configuration
 
-Configuration is stored in:
-- **Config:** `~/.config/skill/config.yaml` (XDG_CONFIG_HOME)
-- **Data:** `~/.local/share/skill/repo` (XDG_DATA_HOME)
+#### Show Configuration
 
-### Configuration format (config.yaml)
-
-```yaml
-version: "1"
-repository:
-  url: "https://github.com/org/skills-repo.git"
-  local_path: "/Users/username/.local/share/skill/repo"
-  last_verified: "2026-02-07T10:30:00Z"
-  auth_type: "https"
+```bash
+skills config show
 ```
 
-### Skills repository structure
+Displays:
+- Active repository
+- All configured repositories
+- Repository details (URL, auth type, skills path, status)
+- Configuration file location
 
-Skills are stored as individual directories in the root of the repository. Each skill must follow this structure:
+#### Verify Repository
 
-#### Required Structure
-
-```
-my-skill/
-├── SKILL.md          # Required: Skill documentation with frontmatter metadata
-├── scripts/          # Optional: Executable code (bash, python, etc.)
-├── references/       # Optional: Additional documentation, guides
-└── assets/           # Optional: Templates, resources, configuration files
+```bash
+skills config verify
 ```
 
-#### SKILL.md Format
+Verifies that the active repository is accessible with current credentials.
 
-The `SKILL.md` file must start with YAML frontmatter containing metadata:
+## Skill Structure
+
+### Repository Structure
+
+Skills are stored as individual directories in a Git repository. Each skill must contain a `SKILL.md` file.
+
+```
+skills-repo/
+├── deploy-app/
+│   ├── SKILL.md              # Required: Skill documentation with metadata
+│   ├── scripts/              # Optional: Executable scripts
+│   │   ├── deploy.sh
+│   │   └── rollback.sh
+│   ├── references/           # Optional: Additional documentation
+│   │   └── deployment-guide.md
+│   └── assets/               # Optional: Templates and resources
+│       └── config.template.yml
+├── explain-code/
+│   ├── SKILL.md
+│   └── references/
+│       └── examples.md
+└── code-review/
+    ├── SKILL.md
+    ├── scripts/
+    │   └── check-style.py
+    └── assets/
+        └── review-checklist.md
+```
+
+### SKILL.md Format
+
+The `SKILL.md` file must start with YAML frontmatter:
 
 ```markdown
 ---
@@ -149,147 +297,99 @@ How to use this skill...
 Examples of using the skill...
 ```
 
-#### Complete Repository Example
+### Custom Skills Path
 
-```
-skills-repo/
-├── deploy-app/
-│   ├── SKILL.md              # Deployment skill documentation
-│   ├── scripts/
-│   │   ├── deploy.sh         # Deployment script
-│   │   └── rollback.sh       # Rollback script
-│   ├── references/
-│   │   └── deployment-guide.md
-│   └── assets/
-│       └── config.template.yml
-├── explain-code/
-│   ├── SKILL.md              # Code explanation skill
-│   └── references/
-│       └── examples.md
-└── code-review/
-    ├── SKILL.md              # Code review skill
-    ├── scripts/
-    │   └── check-style.py
-    └── assets/
-        └── review-checklist.md
-```
-
-**Note:** The CLI automatically discovers any directory containing a `SKILL.md` file as a skill. Directories without `SKILL.md` are ignored.
-
-## Available Commands
-
-### Main Commands
-
-| Command | Description |
-|---------|-------------|
-| `skill init <repo-url>` | Initialize configuration with a repository |
-| `skill config show` | Show current configuration |
-| `skill config set-repo <url>` | Change configured repository |
-| `skill config verify` | Verify repository access |
-| `skill list` | List available or installed skills |
-| `skill install <name>` | Install a skill to a provider (Claude, Cursor) |
-| `skill share --path <path>` | Share a skill by forking and creating a PR |
-| `skill --help` | Show general help |
-| `skill --version` | Show CLI version |
-
-### Share a skill
-
-The `share` command allows you to contribute skills to a repository by automatically forking, branching, and creating a pull request.
+If your skills are in a subdirectory (e.g., `skills/` or `examples/claude-skills/`), specify it when adding the repository:
 
 ```bash
-# Share a skill to the current active repository
-skill share --path ./my-skill
-
-# Share a skill to a specific repository
-skill share --path ./my-skill --repo https://github.com/org/skills-repo.git
-
-# Share a skill with SSH URL
-skill share --path ~/skills/deploy-app --repo git@github.com:org/skills.git
+skills repository add myrepo https://github.com/org/repo.git --skills-path skills
 ```
 
-#### How it works
+## Interactive Mode
 
-The share command:
-1. **Validates** the skill structure (requires `SKILL.md`)
-2. **Warns** if optional directories (`scripts/`, `references/`, `assets/`) are missing
-3. **Forks** the target repository using `gh` CLI
-4. **Creates** a new branch (`add-skill-<name>`)
-5. **Copies** the skill folder to the repository
-6. **Commits** and pushes changes
-7. **Creates** a pull request against main
-8. **Returns** the PR URL
+Most commands support interactive mode with:
 
-#### Skill structure validation
+- **Arrow keys (↑/↓)** - Navigate through items
+- **Search (/)** - Filter items by name or description
+- **Enter** - Select current item
+- **Ctrl+C** - Cancel operation
 
-Your skill directory must contain:
-- ✅ **Required**: `SKILL.md` with frontmatter metadata (see [Skills repository structure](#skills-repository-structure))
-- ⚠️ **Optional**: `scripts/`, `references/`, `assets/` directories (warnings shown if missing)
+Interactive mode features:
+- ✓ Real-time preview of item details
+- ✓ Visual indicators for status (installed, active, etc.)
+- ✓ Sorted and searchable lists
+- ✓ Colored output for better readability
 
-Example of a valid skill:
-```
-my-skill/
-├── SKILL.md          # Required
-├── scripts/          # Optional but recommended
-│   └── setup.sh
-├── references/       # Optional
-│   └── guide.md
-└── assets/           # Optional
-    └── template.yml
-```
+## Contributing
 
-**Requirements:**
-- `gh` CLI must be installed and authenticated (`gh auth login`)
-- You must have permissions to fork the target repository
-- Your skill must have a valid `SKILL.md` file with proper frontmatter
+Contributions are welcome! Here's how you can help:
 
-### Coming Soon
+### Reporting Issues
 
-- `skill list` - List available skills in the repository
-- `skill install <name>` - Install a skill locally
-- `skill uninstall <name>` - Uninstall a skill
-- `skill update` - Update local repository (git pull)
-- `skill sync` - Sync local changes with remote
-- `skill create <name>` - Create a new skill
+- Use the [issue tracker](https://github.com/svlucero/skills-cli/issues)
+- Check if the issue already exists
+- Provide detailed information (OS, Go version, steps to reproduce)
+
+### Submitting Changes
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Commit Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `refactor:` - Code refactoring
+- `test:` - Adding tests
+- `chore:` - Maintenance tasks
 
 ## Development
 
-### Build
+### Building
 
 ```bash
 make build
 ```
 
-The binary is generated in `bin/skill`.
+Binary will be generated in `bin/skills`.
 
-### Run tests
+### Running Tests
 
 ```bash
 make test
 ```
 
-### Run without building
+### Running Without Building
 
 ```bash
-make run ARGS="init https://github.com/org/repo.git"
+make run ARGS="list"
 ```
 
-### Clean generated files
+### Cleaning
 
 ```bash
 make clean
 ```
 
-## Architecture
+### Project Structure
 
 ```
-skill_cli/
-├── cmd/skill/          # Entry point
+skills-cli/
+├── cmd/skill/              # Entry point
 ├── internal/
-│   ├── cli/           # Cobra commands
-│   ├── config/        # Configuration management
-│   ├── git/           # Git operations
-│   └── errors/        # Custom errors
+│   ├── cli/               # Cobra commands
+│   ├── config/            # Configuration management
+│   ├── git/               # Git operations
+│   ├── skill/             # Skill operations
+│   └── errors/            # Custom errors
 ├── go.mod
+├── go.sum
 ├── Makefile
 └── README.md
 ```
@@ -298,43 +398,75 @@ skill_cli/
 
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
 - [Viper](https://github.com/spf13/viper) - Configuration management
-- [XDG](https://github.com/adrg/xdg) - XDG compliant paths
-- [Color](https://github.com/fatih/color) - Colored output
+- [promptui](https://github.com/manifoldco/promptui) - Interactive prompts
+- [XDG](https://github.com/adrg/xdg) - XDG Base Directory support
+- [Color](https://github.com/fatih/color) - Terminal colors
 
 ## Troubleshooting
 
-### Error: "git is not installed or not in PATH"
-
-Make sure you have Git installed:
+### Git not found
 
 ```bash
+# Verify Git is installed
 git --version
 ```
 
-### Error: "authentication failed"
+If not installed, [install Git](https://git-scm.com/downloads).
 
-**For SSH repositories:**
+### Authentication Failed (SSH)
+
 ```bash
-# Verify your SSH connection
+# Test SSH connection
 ssh -T git@github.com
+
+# If it fails, set up SSH keys
+ssh-keygen -t ed25519 -C "your_email@example.com"
+ssh-add ~/.ssh/id_ed25519
 ```
 
-**For private HTTPS repositories:**
-- Configure a personal access token
-- Ensure you have read permissions on the repository
+Add the public key to GitHub: Settings → SSH and GPG keys
 
-### Error: "configuration already exists"
+### Authentication Failed (HTTPS)
 
-If you want to overwrite the existing configuration:
+For private repositories, you may need to configure credentials:
+
+- **GitHub**: Use a [Personal Access Token](https://github.com/settings/tokens)
+- Store credentials: `git config --global credential.helper store`
+
+### Repository Not Found
+
+Verify:
+1. The repository URL is correct
+2. You have read access to the repository
+3. The repository exists and is not deleted
+
+### Configuration Already Exists
+
+To overwrite existing configuration:
 
 ```bash
-skill init <repo-url> --force
+skills repository add myrepo https://... --force
 ```
+
+## File Locations
+
+Configuration follows the XDG Base Directory Specification:
+
+- **Config**: `~/.config/skill/config.yaml` (or `$XDG_CONFIG_HOME/skill/config.yaml`)
+- **Data**: `~/.local/share/skill/repos/` (or `$XDG_DATA_HOME/skill/repos/`)
+- **Claude Skills**: `~/.claude/skills/`
+- **Cursor Skills**: `~/.cursor/skills/`
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Author
 
-Silvina Lucero
+Created by **Silvina Lucero**
+
+- GitHub: [@svlucero](https://github.com/svlucero)
+
+---
+
+**⭐ If you find this project useful, please consider giving it a star!**

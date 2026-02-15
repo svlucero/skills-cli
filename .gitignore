@@ -13,9 +13,27 @@ skills
 
 # Output of the go coverage tool
 *.out
+*.prof
 
 # Go workspace file
 go.work
+go.work.sum
+
+# Environment and secrets
+*.env
+*.env.*
+.env.local
+.env.*.local
+*_secrets.*
+*.key
+*.pem
+secrets/
+
+# Configuration (example configs are ok, but not user configs)
+config.yaml
+*_config.yaml
+!example_config.yaml
+!config.example.yaml
 
 # IDE
 .idea/
@@ -23,12 +41,24 @@ go.work
 *.swp
 *.swo
 *~
+.DS_Store
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Temporary files
 tmp/
 temp/
 *.tmp
+*.bak
+*.backup
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Debug and vendor
+debug
+vendor/
