@@ -51,7 +51,10 @@ func getRepositoryHelp() string {
 		Description("Commands to manage skill repositories.").
 		Section("AVAILABLE SUBCOMMANDS:").
 		Item(yellow("add <name> <url>"), "Add a new repository").
-		Text("                      "+dim("Flags: --force, --skip-verify, --set-current")).
+		Text("                      "+dim("Flags: --force, --skip-verify, --set-current, --skills-path")).
+		EmptyLine().
+		Item(yellow("update <name>"), "Update repository configuration").
+		Text("                      "+dim("Flags: --skills-path")).
 		EmptyLine().
 		Item(yellow("remove <name>"), "Remove a repository").
 		Text("                      "+dim("Flags: --keep-local")).
@@ -61,6 +64,7 @@ func getRepositoryHelp() string {
 		Item(yellow("set-current <name>"), "Set the current active repository").
 		Section("EXAMPLES:").
 		Example("skill repository add myrepo https://github.com/org/skills.git", "").
+		Example("skill repository update myrepo --skills-path skills", "").
 		Example("skill repository list", "").
 		Example("skill repository set-current myrepo", "").
 		Example("skill repository remove oldrepo", "").
@@ -200,12 +204,45 @@ var repositorySetCurrentCmd = &cobra.Command{
 	RunE:  runRepositorySetCurrent,
 }
 
+// getRepositoryUpdateHelp returns colored help text
+func getRepositoryUpdateHelp() string {
+	yellow := color.New(color.FgYellow).SprintFunc()
+
+	return NewHelpBuilder().
+		Description("Update configuration settings for an existing repository.").
+		Section("PARAMETERS:").
+		Item(yellow("<name>"), "Name of the repository to update (required)").
+		Section("FLAGS:").
+		Item("--skills-path <path>", "Update the relative path to skills directory (use '/' or empty for root)").
+		Section("BEHAVIOR:").
+		BulletList([]string{
+			"Updates repository configuration in ~/.config/skill/config.yaml",
+			"Validates skills path exists in the local repository",
+			"Use --skills-path '' or --skills-path / to reset to root",
+		}).
+		Section("EXAMPLES:").
+		Example("skill repository update myrepo --skills-path skills", "# Set skills path to 'skills' directory").
+		Example("skill repository update myrepo --skills-path examples/claude-skills", "# Set nested path").
+		Example("skill repository update myrepo --skills-path /", "# Reset to root directory").
+		Build()
+}
+
+// repositoryUpdateCmd updates a repository configuration
+var repositoryUpdateCmd = &cobra.Command{
+	Use:   "update <name>",
+	Short: "Update repository configuration",
+	Long:  getRepositoryUpdateHelp(),
+	Args:  cobra.ExactArgs(1),
+	RunE:  runRepositoryUpdate,
+}
+
 func init() {
 	// Add subcommands to repository
 	repositoryCmd.AddCommand(repositoryAddCmd)
 	repositoryCmd.AddCommand(repositoryRemoveCmd)
 	repositoryCmd.AddCommand(repositoryListCmd)
 	repositoryCmd.AddCommand(repositorySetCurrentCmd)
+	repositoryCmd.AddCommand(repositoryUpdateCmd)
 
 	// Flags for add
 	repositoryAddCmd.Flags().BoolVarP(&forceRepo, "force", "f", false, "overwrite existing repository with same name")
@@ -214,6 +251,9 @@ func init() {
 
 	// Flags for remove
 	repositoryRemoveCmd.Flags().BoolVar(&keepLocal, "keep-local", false, "keep local repository (only remove from config)")
+
+	// Flags for update
+	repositoryUpdateCmd.Flags().StringVar(&skillsPath, "skills-path", "", "relative path to skills directory within repo (use '/' or empty for root)")
 }
 
 func runRepositoryAdd(cmd *cobra.Command, args []string) error {
@@ -585,6 +625,137 @@ func runRepositorySetCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("%s Active repository changed to '%s'\n", green("✓"), repoName)
+
+	return nil
+}
+
+func runRepositoryUpdate(cmd *cobra.Command, args []string) error {
+	repoName := args[0]
+
+	// Colors for output
+	green := color.New(color.FgGreen).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+
+	// Check if at least one flag was provided
+	if !cmd.Flags().Changed("skills-path") {
+		fmt.Printf("%s No changes specified\n", red("✗"))
+		fmt.Println("  Use --skills-path to update the skills directory path")
+		fmt.Println("\nExample:")
+		fmt.Printf("  skill repository update %s --skills-path skills\n", repoName)
+		return fmt.Errorf("no update flags provided")
+	}
+
+	// Check configuration exists
+	if !config.Exists() {
+		fmt.Printf("%s Configuration not found\n", red("✗"))
+		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+		return errors.ErrConfigNotFound
+	}
+
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Printf("%s Error loading configuration: %v\n", red("✗"), err)
+		return err
+	}
+
+	// Get repository
+	repo, err := config.GetRepo(cfg, repoName)
+	if err != nil {
+		fmt.Printf("%s Repository '%s' not found\n", red("✗"), repoName)
+		fmt.Println("\nAvailable repositories:")
+		for name := range cfg.Repositories {
+			fmt.Printf("  - %s\n", name)
+		}
+		return errors.ErrRepoNotFound
+	}
+
+	// Check if repository is cloned locally
+	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
+		fmt.Printf("%s Repository '%s' not cloned locally\n", red("✗"), repoName)
+		fmt.Printf("  Run 'skill repository add %s %s' to clone it\n", repoName, repo.URL)
+		return fmt.Errorf("repository not cloned")
+	}
+
+	// Process --skills-path flag
+	if cmd.Flags().Changed("skills-path") {
+		fmt.Printf("Updating skills path...\n")
+
+		// Normalize path
+		newSkillsPath := skillsPath
+
+		// Handle "/" or empty as root
+		if newSkillsPath == "/" {
+			newSkillsPath = ""
+		}
+
+		// If not empty, validate
+		if newSkillsPath != "" {
+			// Normalize path (convert backslashes, clean up)
+			newSkillsPath = filepath.Clean(newSkillsPath)
+
+			// Ensure it's a relative path
+			if filepath.IsAbs(newSkillsPath) {
+				fmt.Printf("%s %s\n", red("✗"), formatError("Skills path must be relative, not absolute: %s", newSkillsPath))
+				return fmt.Errorf("skills path must be relative")
+			}
+
+			// Check if the path exists within the cloned repo
+			fullSkillsPath := filepath.Join(repo.LocalPath, newSkillsPath)
+			if _, err := os.Stat(fullSkillsPath); os.IsNotExist(err) {
+				fmt.Printf("%s %s\n", red("✗"), formatError("Skills path not found in repository: %s", newSkillsPath))
+				fmt.Printf("  Full path: %s\n", fullSkillsPath)
+				fmt.Println("\nThe specified skills path does not exist in the repository.")
+				fmt.Println("Available directories:")
+
+				// Show available directories as hint
+				entries, _ := os.ReadDir(repo.LocalPath)
+				for _, entry := range entries {
+					if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+						fmt.Printf("  - %s\n", entry.Name())
+					}
+				}
+
+				return fmt.Errorf("skills path not found")
+			}
+
+			// Check if path is a directory
+			info, err := os.Stat(fullSkillsPath)
+			if err != nil {
+				fmt.Printf("%s %s\n", red("✗"), formatError("Error accessing skills path: %v", err))
+				return err
+			}
+			if !info.IsDir() {
+				fmt.Printf("%s %s\n", red("✗"), formatError("Skills path is not a directory: %s", newSkillsPath))
+				return fmt.Errorf("skills path must be a directory")
+			}
+		}
+
+		// Update the repository
+		repo.SkillsPath = newSkillsPath
+		cfg.Repositories[repoName] = *repo
+
+		displayPath := newSkillsPath
+		if displayPath == "" {
+			displayPath = "/"
+		}
+		fmt.Printf("%s Skills path updated: %s\n", green("✓"), displayPath)
+	}
+
+	// Validate and save configuration
+	if err := config.Validate(cfg); err != nil {
+		fmt.Printf("%s Invalid configuration: %v\n", red("✗"), err)
+		return err
+	}
+
+	if err := config.Save(cfg); err != nil {
+		fmt.Printf("%s Error saving configuration: %v\n", red("✗"), err)
+		return err
+	}
+
+	fmt.Printf("%s Configuration saved\n", green("✓"))
+	fmt.Println()
+	fmt.Printf("Repository '%s' updated successfully\n", repoName)
 
 	return nil
 }
