@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/silvinalucero/skill_cli/internal/errors"
 	"github.com/silvinalucero/skill_cli/internal/git"
@@ -22,6 +23,17 @@ var (
 	keepLocal  bool
 	skillsPath string
 )
+
+// repositoryItem represents a repository for interactive display
+type repositoryItem struct {
+	Name        string
+	URL         string
+	AuthType    string
+	SkillsPath  string
+	IsActive    bool
+	IsCloned    bool
+	LocalPath   string
+}
 
 // formatError formats an error message with red color
 // Usage: fmt.Println(formatError("Error: %s", err))
@@ -515,20 +527,17 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 }
 
 func runRepositoryList(cmd *cobra.Command, args []string) error {
-	// Colors for output
 	cyan := color.New(color.FgCyan).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
 
-	// Check configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
 		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("%s Error loading configuration: %v\n", red("✗"), err)
@@ -540,38 +549,90 @@ func runRepositoryList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("%s\n", cyan("Configured repositories:"))
-	fmt.Println()
-
+	var repos []repositoryItem
 	for name, repo := range cfg.Repositories {
-		// Active repository indicator
-		activeMarker := "  "
-		activeSuffix := ""
-		if name == cfg.ActiveRepo {
-			activeMarker = green("* ")
-			activeSuffix = green(" (current)")
-		}
-
-		fmt.Printf("%s%s%s\n", activeMarker, name, activeSuffix)
-		fmt.Printf("    URL:   %s\n", repo.URL)
-		fmt.Printf("    Auth:  %s\n", repo.AuthType)
-
-		// Show skills path (default to "/" for root)
 		skillsDisplay := repo.SkillsPath
 		if skillsDisplay == "" {
 			skillsDisplay = "/"
 		}
-		fmt.Printf("    Skills: %s\n", skillsDisplay)
 
-		// Local repo status
-		if git.RepoExists(repo.LocalPath) {
-			fmt.Printf("    Local: %s\n", green("✓ cloned"))
-		} else {
-			fmt.Printf("    Local: %s\n", red("✗ not cloned"))
+		repos = append(repos, repositoryItem{
+			Name:       name,
+			URL:        repo.URL,
+			AuthType:   repo.AuthType,
+			SkillsPath: skillsDisplay,
+			IsActive:   name == cfg.ActiveRepo,
+			IsCloned:   git.RepoExists(repo.LocalPath),
+			LocalPath:  repo.LocalPath,
+		})
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label: "{{ . }}",
+		Active: "▸ {{ .Name | cyan }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
+		Inactive: "  {{ .Name | white }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
+		Selected: "{{ \"Selected:\" | green }} {{ .Name | cyan }}",
+		Details: `
+--------- Repository Details ---------
+{{ "Name:" | faint }}	{{ .Name }}{{ if .IsActive }} {{ "★ (active)" | green }}{{ end }}
+{{ "URL:" | faint }}	{{ .URL }}
+{{ "Auth:" | faint }}	{{ .AuthType }}
+{{ "Skills Path:" | faint }}	{{ .SkillsPath }}
+{{ "Local:" | faint }}	{{ if .IsCloned }}{{ "✓ cloned" | green }}{{ else }}{{ "✗ not cloned" | red }}{{ end }}
+{{ "Path:" | faint }}	{{ .LocalPath }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		repo := repos[index]
+		name := repo.Name
+		url := repo.URL
+
+		input = promptui.Styler(promptui.FGBold)(input)
+
+		if name == input || url == input {
+			return true
 		}
 
-		fmt.Println()
+		return false
 	}
+
+	prompt := promptui.Select{
+		Label:     fmt.Sprintf("%s (Use ↑/↓ arrows, / to search, Enter to select, Ctrl+C to exit)", cyan("Repositories")),
+		Items:     repos,
+		Templates: templates,
+		Size:      10,
+		Searcher:  searcher,
+	}
+
+	fmt.Println()
+	idx, _, err := prompt.Run()
+
+	if err != nil {
+		if err == promptui.ErrInterrupt {
+			fmt.Printf("\n%s Selection cancelled\n", yellow("⚠"))
+			return nil
+		}
+		return fmt.Errorf("prompt failed: %w", err)
+	}
+
+	selected := repos[idx]
+
+	fmt.Println()
+	fmt.Printf("%s Repository selected: %s\n", green("✓"), cyan(selected.Name))
+	if selected.IsActive {
+		fmt.Printf("  Status: %s\n", green("★ Active"))
+	} else {
+		fmt.Printf("  Status: Available\n")
+	}
+	fmt.Printf("  URL: %s\n", selected.URL)
+	fmt.Printf("  Auth: %s\n", selected.AuthType)
+	fmt.Printf("  Skills Path: %s\n", selected.SkillsPath)
+	if selected.IsCloned {
+		fmt.Printf("  Local: %s\n", green("✓ cloned"))
+	} else {
+		fmt.Printf("  Local: %s\n", red("✗ not cloned"))
+	}
+	fmt.Printf("  Path: %s\n", selected.LocalPath)
 
 	return nil
 }
