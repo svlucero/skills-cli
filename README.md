@@ -66,11 +66,11 @@ The easiest way to install Skills CLI is to download a pre-built binary from the
 
 ```bash
 # Intel Mac (x86_64)
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Darwin_x86_64.tar.gz | tar xz
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Darwin_x86_64 -o skills
 sudo mv skills /usr/local/bin/
 
 # Apple Silicon (arm64)
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Darwin_arm64.tar.gz | tar xz
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Darwin_arm64 -o skills
 sudo mv skills /usr/local/bin/
 ```
 
@@ -78,11 +78,11 @@ sudo mv skills /usr/local/bin/
 
 ```bash
 # x86_64
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Linux_x86_64.tar.gz | tar xz
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Linux_x86_64.tar.gz | tar xz
 sudo mv skills /usr/local/bin/
 
 # arm64
-curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_*_Linux_arm64.tar.gz | tar xz
+curl -L https://github.com/svlucero/skills-cli/releases/latest/download/skills_Linux_arm64.tar.gz | tar xz
 sudo mv skills /usr/local/bin/
 ```
 
