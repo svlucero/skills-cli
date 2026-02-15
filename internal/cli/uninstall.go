@@ -41,11 +41,11 @@ func getUninstallHelp() string {
 			"For Cursor: ~/.cursor/skills/<skill-name>/",
 		}).
 		Section("EXAMPLES:").
-		Example("skill uninstall", "# Interactive - select from Claude").
-		Example("skill uninstall --provider cursor", "# Interactive - select from Cursor").
-		Example("skill uninstall explain-code", "# Uninstall from Claude").
-		Example("skill uninstall explain-code --provider cursor", "# Uninstall from Cursor").
-		Example("skill uninstall deploy-app --force", "# Uninstall without confirmation").
+		Example("skills uninstall", "# Interactive - select from Claude").
+		Example("skills uninstall --provider cursor", "# Interactive - select from Cursor").
+		Example("skills uninstall explain-code", "# Uninstall from Claude").
+		Example("skills uninstall explain-code --provider cursor", "# Uninstall from Cursor").
+		Example("skills uninstall deploy-app --force", "# Uninstall without confirmation").
 		Build()
 }
 

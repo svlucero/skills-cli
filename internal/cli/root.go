@@ -21,7 +21,7 @@ func getColoredHelp() string {
 	dim := color.New(color.Faint).SprintFunc()
 
 	return NewHelpBuilder().
-		Text(white("skill is a CLI for managing skills stored in Git repositories.")).
+		Text(white("skills is a CLI for managing skills stored in Git repositories.")).
 		EmptyLine().
 		Text("Skills are structured as individual directories with multiple files").
 		Text("(config.yaml, scripts, README.md, etc.) and are stored in a shared Git repository.").
@@ -29,8 +29,8 @@ func getColoredHelp() string {
 		Text("This CLI allows you to initialize, install, list and manage skills from").
 		Text("a configured remote repository.").
 		Section("USAGE:").
-		Example("skill [command] [flags]", "").
-		Example("skill [command] [subcommand] [arguments] [flags]", "").
+		Example("skills [command] [flags]", "").
+		Example("skills [command] [subcommand] [arguments] [flags]", "").
 		Section("AVAILABLE COMMANDS:").
 		Item(yellow("repository <subcommand>"), "Manage skill repositories").
 		SubItem("add <name> <url>", "Add a new repository").
@@ -55,19 +55,19 @@ func getColoredHelp() string {
 		Item("-v, --verbose", "Detailed output").
 		Item("-h, --help", "Show help for command").
 		Section("EXAMPLES:").
-		Example("skill repository add myrepo https://github.com/org/skills.git", "").
-		Example("skill list", "").
-		Example("skill install explain-code --provider claude", "").
-		Example("skill share --path ./my-skill", "").
-		Example("skill config show", "").
+		Example("skills repository add myrepo https://github.com/org/skills.git", "").
+		Example("skills list", "").
+		Example("skills install explain-code --provider claude", "").
+		Example("skills share --path ./my-skill", "").
+		Example("skills config show", "").
 		EmptyLine().
-		Text(dim("Use \"skill [command] --help\" for more information about a command.")).
+		Text(dim("Use \"skills [command] --help\" for more information about a command.")).
 		Build()
 }
 
 // rootCmd represents the base command when called without subcommands
 var rootCmd = &cobra.Command{
-	Use:   "skill [command]",
+	Use:   "skills [command]",
 	Short: "Skills manager from Git repositories",
 	Long:  getColoredHelp(),
 	Version: "0.1.0",

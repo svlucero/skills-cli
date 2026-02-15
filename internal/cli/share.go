@@ -51,9 +51,9 @@ func getShareHelp() string {
 			"You must have permissions to fork the target repository",
 		}).
 		Section("EXAMPLES:").
-		Example("skill share --path ./my-skill", "# Share to current repo").
-		Example("skill share --path ./my-skill --repo https://github.com/org/skills", "# Share to specific repo").
-		Example("skill share --path ~/skills/deploy-app --repo git@github.com:org/skills.git", "").
+		Example("skills share --path ./my-skill", "# Share to current repo").
+		Example("skills share --path ./my-skill --repo https://github.com/org/skills", "# Share to specific repo").
+		Example("skills share --path ~/skills/deploy-app --repo git@github.com:org/skills.git", "").
 		Build()
 }
 
@@ -131,7 +131,7 @@ func runShare(cmd *cobra.Command, args []string) error {
 		// Use current/active repository
 		if !config.Exists() {
 			fmt.Printf("%s Configuration not found\n", red("✗"))
-			fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+			fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
 			return fmt.Errorf("configuration not found")
 		}
 

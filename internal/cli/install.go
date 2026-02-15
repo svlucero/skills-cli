@@ -48,12 +48,12 @@ func getInstallHelp() string {
 			"For Cursor: ~/.cursor/skills/<skill-name>/",
 		}).
 		Section("EXAMPLES:").
-		Example("skill install", "# Interactive - select from active repo").
-		Example("skill install --repo myrepo", "# Interactive - select from specific repo").
-		Example("skill install explain-code", "# Install to Claude from active repo").
-		Example("skill install explain-code --repo myrepo", "# Install from specific repo").
-		Example("skill install explain-code --provider cursor", "# Install to Cursor").
-		Example("skill install deploy-app --repo company --provider claude", "").
+		Example("skills install", "# Interactive - select from active repo").
+		Example("skills install --repo myrepo", "# Interactive - select from specific repo").
+		Example("skills install explain-code", "# Install to Claude from active repo").
+		Example("skills install explain-code --repo myrepo", "# Install from specific repo").
+		Example("skills install explain-code --provider cursor", "# Install to Cursor").
+		Example("skills install deploy-app --repo company --provider claude", "").
 		Build()
 }
 
@@ -103,7 +103,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Check configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+		fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 

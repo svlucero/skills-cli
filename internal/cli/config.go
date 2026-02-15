@@ -28,9 +28,9 @@ func getConfigHelp() string {
 		Item(yellow("verify"), "Verify repository access").
 		Text("                        "+dim("Tests connectivity to the configured repository")).
 		Section("EXAMPLES:").
-		Example("skill config show", "").
-		Example("skill config set-repo https://github.com/org/new-repo.git", "").
-		Example("skill config verify", "").
+		Example("skills config show", "").
+		Example("skills config set-repo https://github.com/org/new-repo.git", "").
+		Example("skills config verify", "").
 		Build()
 }
 
@@ -60,7 +60,7 @@ func getConfigShowHelp() string {
 			"  * Active indicator (*)",
 		}).
 		Section("EXAMPLE:").
-		Example("skill config show", "").
+		Example("skills config show", "").
 		Build()
 }
 
@@ -88,11 +88,11 @@ func getConfigSetRepoHelp() string {
 			"Verifies repository access (unless --no-verify)",
 			"Updates configuration with new URL",
 			"Does not automatically update local repository",
-			"Run 'skill update' to sync (coming soon)",
+			"Run 'skills update' to sync (coming soon)",
 		}).
 		Section("EXAMPLES:").
-		Example("skill config set-repo https://github.com/org/new-repo.git", "").
-		Example("skill config set-repo git@github.com:org/new-repo.git --no-verify", "").
+		Example("skills config set-repo https://github.com/org/new-repo.git", "").
+		Example("skills config set-repo git@github.com:org/new-repo.git --no-verify", "").
 		Build()
 }
 
@@ -122,7 +122,7 @@ func getConfigVerifyHelp() string {
 			"For SSH: Validates SSH key authentication",
 		}).
 		Section("EXAMPLES:").
-		Example("skill config verify", "").
+		Example("skills config verify", "").
 		Build()
 }
 
@@ -158,7 +158,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	// Check if configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill init <name> <repo-url>' to initialize")
+		fmt.Println("  Run 'skills init <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
@@ -236,7 +236,7 @@ func runConfigSetRepo(cmd *cobra.Command, args []string) error {
 	// Check if configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill init <repo-url>' to initialize first")
+		fmt.Println("  Run 'skills init <repo-url>' to initialize first")
 		return errors.ErrConfigNotFound
 	}
 
@@ -279,7 +279,7 @@ func runConfigSetRepo(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("%s Repository updated to: %s\n", green("✓"), repoURL)
 	fmt.Println("\nNote: Local repository was not automatically updated.")
-	fmt.Println("      Run 'skill update' to sync with the new repository (coming soon)")
+	fmt.Println("      Run 'skills update' to sync with the new repository (coming soon)")
 
 	return nil
 }
@@ -292,7 +292,7 @@ func runConfigVerify(cmd *cobra.Command, args []string) error {
 	// Check if configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill init <repo-url>' to initialize first")
+		fmt.Println("  Run 'skills init <repo-url>' to initialize first")
 		return errors.ErrConfigNotFound
 	}
 

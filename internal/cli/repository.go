@@ -77,11 +77,11 @@ func getRepositoryHelp() string {
 		EmptyLine().
 		Item(yellow("set-current <name>"), "Set the current active repository").
 		Section("EXAMPLES:").
-		Example("skill repository add myrepo https://github.com/org/skills.git", "").
-		Example("skill repository update myrepo --skills-path skills", "").
-		Example("skill repository list", "").
-		Example("skill repository set-current myrepo", "").
-		Example("skill repository remove oldrepo", "").
+		Example("skills repository add myrepo https://github.com/org/skills.git", "").
+		Example("skills repository update myrepo --skills-path skills", "").
+		Example("skills repository list", "").
+		Example("skills repository set-current myrepo", "").
+		Example("skills repository remove oldrepo", "").
 		Build()
 }
 
@@ -115,17 +115,17 @@ func getRepositoryAddHelp() string {
 			"First repository added automatically becomes active",
 		}).
 		Section("EXAMPLES:").
-		Example("skill repository add myrepo https://github.com/org/skills-repo.git", "").
-		Example("skill repository add company git@github.com:company/internal-skills.git", "").
-		Example("skill repository add myrepo https://github.com/org/skills-repo.git --force", "").
-		Example("skill repository add secondary https://github.com/org/another.git --set-current", "").
+		Example("skills repository add myrepo https://github.com/org/skills-repo.git", "").
+		Example("skills repository add company git@github.com:company/internal-skills.git", "").
+		Example("skills repository add myrepo https://github.com/org/skills-repo.git --force", "").
+		Example("skills repository add secondary https://github.com/org/another.git --set-current", "").
 		Build()
 }
 
 // repositoryAddCmd adds a new repository
 var repositoryAddCmd = &cobra.Command{
 	Use:   "add <name> <repository-url> [flags]",
-	Short: "Add a new skill repository",
+	Short: "Add a new skills repository",
 	Long:  getRepositoryAddHelp(),
 	Args:  cobra.ExactArgs(2),
 	RunE:  runRepositoryAdd,
@@ -150,9 +150,9 @@ func getRepositoryRemoveHelp() string {
 			"Cannot remove the active repository (switch first)",
 		}).
 		Section("EXAMPLES:").
-		Example("skill repository remove", "# Interactive selection").
-		Example("skill repository remove oldrepo", "# Remove repo and local files").
-		Example("skill repository remove oldrepo --keep-local", "# Remove from config only").
+		Example("skills repository remove", "# Interactive selection").
+		Example("skills repository remove oldrepo", "# Remove repo and local files").
+		Example("skills repository remove oldrepo --keep-local", "# Remove from config only").
 		Build()
 }
 
@@ -180,7 +180,7 @@ func getRepositoryListHelp() string {
 			"Active repository indicator (*)",
 		}).
 		Section("EXAMPLE:").
-		Example("skill repository list", "").
+		Example("skills repository list", "").
 		Build()
 }
 
@@ -205,13 +205,13 @@ func getRepositorySetCurrentHelp() string {
 			"If no name provided, shows interactive list to select from",
 			"Use arrow keys to navigate and Enter to select a repository",
 			"Sets the specified repository as the active one",
-			"Commands like 'skill list' and 'skill install' use the active repo by default",
+			"Commands like 'skills list' and 'skills install' use the active repo by default",
 			"The repository must already be added to configuration",
 		}).
 		Section("EXAMPLES:").
-		Example("skill repository set-current", "# Interactive selection").
-		Example("skill repository set-current myrepo", "# Set directly").
-		Example("skill repository set-current company", "").
+		Example("skills repository set-current", "# Interactive selection").
+		Example("skills repository set-current myrepo", "# Set directly").
+		Example("skills repository set-current company", "").
 		Build()
 }
 
@@ -241,9 +241,9 @@ func getRepositoryUpdateHelp() string {
 			"Use --skills-path '' or --skills-path / to reset to root",
 		}).
 		Section("EXAMPLES:").
-		Example("skill repository update myrepo --skills-path skills", "# Set skills path to 'skills' directory").
-		Example("skill repository update myrepo --skills-path examples/claude-skills", "# Set nested path").
-		Example("skill repository update myrepo --skills-path /", "# Reset to root directory").
+		Example("skills repository update myrepo --skills-path skills", "# Set skills path to 'skills' directory").
+		Example("skills repository update myrepo --skills-path examples/claude-skills", "# Set nested path").
+		Example("skills repository update myrepo --skills-path /", "# Reset to root directory").
 		Build()
 }
 
@@ -318,8 +318,8 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  %s\n", formatError("Existing name: %s", existingRepo.Name))
 			fmt.Println()
 			fmt.Println(formatError("This repository is already configured. You can:"))
-			fmt.Printf("  - Use the existing repository: skill repository set-current %s\n", existingRepo.Name)
-			fmt.Printf("  - Remove and re-add: skill repository remove %s\n", existingRepo.Name)
+			fmt.Printf("  - Use the existing repository: skills repository set-current %s\n", existingRepo.Name)
+			fmt.Printf("  - Remove and re-add: skills repository remove %s\n", existingRepo.Name)
 			fmt.Println("  - Use --force to add anyway (creates duplicate)")
 			return fmt.Errorf("duplicate repository URL")
 		}
@@ -514,13 +514,13 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Status: %s\n", green("active"))
 	} else {
 		fmt.Printf("Status: available\n")
-		fmt.Printf("To activate: skill repository set-current %s\n", repoName)
+		fmt.Printf("To activate: skills repository set-current %s\n", repoName)
 	}
 
 	fmt.Println("\nNext steps:")
-	fmt.Println("  - Run 'skill config show' to see configuration")
-	fmt.Println("  - Run 'skill list' to see available skills")
-	fmt.Println("  - Run 'skill repository list' to see all repositories")
+	fmt.Println("  - Run 'skills config show' to see configuration")
+	fmt.Println("  - Run 'skills list' to see available skills")
+	fmt.Println("  - Run 'skills repository list' to see all repositories")
 
 	return nil
 }
@@ -533,7 +533,7 @@ func runRepositoryList(cmd *cobra.Command, args []string) error {
 
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+		fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
@@ -689,8 +689,8 @@ func runRepositoryRemove(cmd *cobra.Command, args []string) error {
 		if selected.IsActive {
 			fmt.Printf("\n%s Cannot remove the active repository\n", red("✗"))
 			fmt.Println("\nTo remove the active repository:")
-			fmt.Println("  1. Switch to another repository: skill repository set-current <other-name>")
-			fmt.Printf("  2. Remove this repository: skill repository remove %s\n", repoName)
+			fmt.Println("  1. Switch to another repository: skills repository set-current <other-name>")
+			fmt.Printf("  2. Remove this repository: skills repository remove %s\n", repoName)
 			return errors.ErrRepoNotFound
 		}
 	} else {
@@ -709,8 +709,8 @@ func runRepositoryRemove(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s %v\n", red("✗"), err)
 		if cfg.ActiveRepo == repoName {
 			fmt.Println("\nTo remove the active repository:")
-			fmt.Println("  1. Switch to another repository: skill repository set-current <other-name>")
-			fmt.Printf("  2. Remove this repository: skill repository remove %s\n", repoName)
+			fmt.Println("  1. Switch to another repository: skills repository set-current <other-name>")
+			fmt.Printf("  2. Remove this repository: skills repository remove %s\n", repoName)
 		}
 		return err
 	}
@@ -746,7 +746,7 @@ func runRepositorySetCurrent(cmd *cobra.Command, args []string) error {
 
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+		fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
@@ -835,14 +835,14 @@ func runRepositoryUpdate(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s No changes specified\n", red("✗"))
 		fmt.Println("  Use --skills-path to update the skills directory path")
 		fmt.Println("\nExample:")
-		fmt.Printf("  skill repository update %s --skills-path skills\n", repoName)
+		fmt.Printf("  skills repository update %s --skills-path skills\n", repoName)
 		return fmt.Errorf("no update flags provided")
 	}
 
 	// Check configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+		fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
@@ -867,7 +867,7 @@ func runRepositoryUpdate(cmd *cobra.Command, args []string) error {
 	// Check if repository is cloned locally
 	if _, err := os.Stat(repo.LocalPath); os.IsNotExist(err) {
 		fmt.Printf("%s Repository '%s' not cloned locally\n", red("✗"), repoName)
-		fmt.Printf("  Run 'skill repository add %s %s' to clone it\n", repoName, repo.URL)
+		fmt.Printf("  Run 'skills repository add %s %s' to clone it\n", repoName, repo.URL)
 		return fmt.Errorf("repository not cloned")
 	}
 

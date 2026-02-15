@@ -45,12 +45,12 @@ func getListHelp() string {
 			"Use --installed with --provider to see installed skills",
 		}).
 		Section("EXAMPLES:").
-		Example("skill list", "# List from active repo").
-		Example("skill list --repo myrepo", "# List from specific repo").
-		Example("skill list --all", "# List from all repos").
-		Example("skill list --installed --provider claude", "# List installed in Claude").
-		Example("skill list --compact", "# Compact format").
-		Example("skill list --no-update", "# Skip repo update").
+		Example("skills list", "# List from active repo").
+		Example("skills list --repo myrepo", "# List from specific repo").
+		Example("skills list --all", "# List from all repos").
+		Example("skills list --installed --provider claude", "# List installed in Claude").
+		Example("skills list --compact", "# Compact format").
+		Example("skills list --no-update", "# Skip repo update").
 		Build()
 }
 
@@ -85,7 +85,7 @@ func runList(cmd *cobra.Command, args []string) error {
 			fmt.Println("\nSupported providers:")
 			fmt.Println("  - claude")
 			fmt.Println("  - cursor")
-			fmt.Println("\nExample: skill list --installed --provider claude")
+			fmt.Println("\nExample: skills list --installed --provider claude")
 			return fmt.Errorf("missing required flag: --provider")
 		}
 
@@ -96,7 +96,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	// Check configuration exists (only for repository listing)
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
-		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
+		fmt.Println("  Run 'skills repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
