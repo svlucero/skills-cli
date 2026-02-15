@@ -187,6 +187,14 @@ skills list
 
 ### Repository Management
 
+Repositories are Git repositories (public or private) that contain collections of skills. You can:
+- **Import skills** from repositories to install them locally
+- **Export skills** to repositories to share them with others (using the `share` command)
+- Manage multiple repositories simultaneously
+- Switch between different skill repositories
+
+Repositories can be hosted on GitHub, GitLab, Bitbucket, or any Git server. Both HTTPS and SSH authentication are supported.
+
 #### Add a Repository
 
 ```bash
