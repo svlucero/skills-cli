@@ -18,7 +18,6 @@ import (
 var (
 	// Flags for repository commands
 	forceRepo  bool
-	skipVerify bool
 	setCurrent bool
 	keepLocal  bool
 	skillsPath string
@@ -104,14 +103,13 @@ func getRepositoryAddHelp() string {
 		Item(yellow("<repository-url>"), "Git repository URL - HTTPS or SSH format (required)").
 		Section("FLAGS:").
 		Item("-f, --force", "Overwrite existing repository or allow duplicate URLs").
-		Item("--skip-verify", "Skip repository verification (not recommended)").
 		Item("--set-current", "Set this repository as the active one").
 		Item("--skills-path <path>", "Relative path to skills directory (e.g., 'skills', 'examples/claude-skills')").
 		Section("BEHAVIOR:").
 		BulletList([]string{
 			"Validates repository name and URL format",
 			"Checks for duplicate repository URLs (prevents same repo with different names)",
-			"Verifies repository access (unless --skip-verify)",
+			"Verifies repository access before adding",
 			"Clones to ~/.local/share/skill/repos/<name>",
 			"Saves configuration to ~/.config/skill/config.yaml",
 			"First repository added automatically becomes active",
@@ -268,7 +266,6 @@ func init() {
 
 	// Flags for add
 	repositoryAddCmd.Flags().BoolVarP(&forceRepo, "force", "f", false, "overwrite existing repository with same name")
-	repositoryAddCmd.Flags().BoolVar(&skipVerify, "skip-verify", false, "skip repository verification (not recommended)")
 	repositoryAddCmd.Flags().BoolVar(&setCurrent, "set-current", false, "set this repository as active")
 	repositoryAddCmd.Flags().StringVar(&skillsPath, "skills-path", "", "relative path to skills directory within repo (e.g., 'skills', 'examples/claude-skills')")
 
@@ -357,38 +354,34 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	authType := git.DetectAuthType(repoURL)
 	fmt.Printf("Detected authentication type: %s\n", authType)
 
-	// 5. Verify repository access (unless --skip-verify)
-	if !skipVerify {
-		fmt.Printf("Verifying repository access...\n")
-		if err := git.VerifyBasic(repoURL); err != nil {
-			fmt.Printf("%s %s\n", red("✗"), formatError("%v", err))
+	// 5. Verify repository access
+	fmt.Printf("Verifying repository access...\n")
+	if err := git.VerifyBasic(repoURL); err != nil {
+		fmt.Printf("%s %s\n", red("✗"), formatError("%v", err))
 
-			// Help messages based on error
-			if errors.IsAuthenticationFailed(err) {
-				fmt.Println("\nHelp:")
-				if authType == config.AuthSSH {
-					fmt.Println("  - Verify your SSH key is configured")
-					fmt.Println("  - Run: ssh -T git@github.com (for GitHub)")
-				} else {
-					fmt.Println("  - Verify your access credentials")
-					fmt.Println("  - For private repos, configure an access token")
-				}
-			} else if errors.IsNetworkError(err) {
-				fmt.Println("\nHelp:")
-				fmt.Println("  - Check your internet connection")
-				fmt.Println("  - Verify you can reach the repository host")
-			} else if errors.IsRepositoryNotFound(err) {
-				fmt.Println("\nHelp:")
-				fmt.Println("  - Verify the repository URL is correct")
-				fmt.Println("  - Verify you have read permissions on the repository")
+		// Help messages based on error
+		if errors.IsAuthenticationFailed(err) {
+			fmt.Println("\nHelp:")
+			if authType == config.AuthSSH {
+				fmt.Println("  - Verify your SSH key is configured")
+				fmt.Println("  - Run: ssh -T git@github.com (for GitHub)")
+			} else {
+				fmt.Println("  - Verify your access credentials")
+				fmt.Println("  - For private repos, configure an access token")
 			}
-
-			return err
+		} else if errors.IsNetworkError(err) {
+			fmt.Println("\nHelp:")
+			fmt.Println("  - Check your internet connection")
+			fmt.Println("  - Verify you can reach the repository host")
+		} else if errors.IsRepositoryNotFound(err) {
+			fmt.Println("\nHelp:")
+			fmt.Println("  - Verify the repository URL is correct")
+			fmt.Println("  - Verify you have read permissions on the repository")
 		}
-		fmt.Printf("%s Repository accessible\n", green("✓"))
-	} else {
-		fmt.Printf("%s %s\n", yellow("⚠"), formatWarning("Verification skipped (--skip-verify)"))
+
+		return err
 	}
+	fmt.Printf("%s Repository accessible\n", green("✓"))
 
 	// 6. Get local path for repository
 	repoPath := config.GetRepoPathForRepo(repoName)
