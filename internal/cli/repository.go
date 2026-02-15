@@ -198,25 +198,28 @@ func getRepositorySetCurrentHelp() string {
 	return NewHelpBuilder().
 		Description("Change the active repository.").
 		Section("PARAMETERS:").
-		Item(yellow("<name>"), "Name of the repository to set as active (required)").
+		Item(yellow("<name>"), "Name of the repository to set as active (optional - interactive if omitted)").
 		Section("BEHAVIOR:").
 		BulletList([]string{
+			"If no name provided, shows interactive list to select from",
+			"Use arrow keys to navigate and Enter to select a repository",
 			"Sets the specified repository as the active one",
 			"Commands like 'skill list' and 'skill install' use the active repo by default",
 			"The repository must already be added to configuration",
 		}).
 		Section("EXAMPLES:").
-		Example("skill repository set-current myrepo", "").
+		Example("skill repository set-current", "# Interactive selection").
+		Example("skill repository set-current myrepo", "# Set directly").
 		Example("skill repository set-current company", "").
 		Build()
 }
 
 // repositorySetCurrentCmd sets the active repository
 var repositorySetCurrentCmd = &cobra.Command{
-	Use:   "set-current <name>",
+	Use:   "set-current [name]",
 	Short: "Set the current active repository",
 	Long:  getRepositorySetCurrentHelp(),
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runRepositorySetCurrent,
 }
 
@@ -699,55 +702,86 @@ func runRepositoryRemove(cmd *cobra.Command, args []string) error {
 }
 
 func runRepositorySetCurrent(cmd *cobra.Command, args []string) error {
-	repoName := args[0]
-
-	// Colors for output
 	green := color.New(color.FgGreen).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
+	cyan := color.New(color.FgCyan).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
 
-	// Check configuration exists
 	if !config.Exists() {
 		fmt.Printf("%s Configuration not found\n", red("✗"))
 		fmt.Println("  Run 'skill repository add <name> <repo-url>' to initialize")
 		return errors.ErrConfigNotFound
 	}
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("%s Error loading configuration: %v\n", red("✗"), err)
 		return err
 	}
 
-	// Verify repository exists
-	if _, err := config.GetRepo(cfg, repoName); err != nil {
-		fmt.Printf("%s Repository '%s' not found\n", red("✗"), repoName)
-		fmt.Println("\nAvailable repositories:")
-		for name := range cfg.Repositories {
-			fmt.Printf("  - %s\n", name)
-		}
+	if len(cfg.Repositories) == 0 {
+		fmt.Printf("%s No repositories configured\n", yellow("⚠"))
 		return errors.ErrRepoNotFound
 	}
 
-	// Already active?
+	var repoName string
+
+	if len(args) == 0 {
+		// No repository name provided - interactive mode
+		var repos []repositoryItem
+		for name, repo := range cfg.Repositories {
+			skillsDisplay := repo.SkillsPath
+			if skillsDisplay == "" {
+				skillsDisplay = "/"
+			}
+
+			repos = append(repos, repositoryItem{
+				Name:       name,
+				URL:        repo.URL,
+				AuthType:   repo.AuthType,
+				SkillsPath: skillsDisplay,
+				IsActive:   name == cfg.ActiveRepo,
+				IsCloned:   git.RepoExists(repo.LocalPath),
+				LocalPath:  repo.LocalPath,
+			})
+		}
+
+		selected, err := selectRepositoryInteractive(repos, "Select repository to set as active")
+		if err != nil {
+			return err
+		}
+
+		repoName = selected.Name
+	} else {
+		// Repository name provided - traditional mode
+		repoName = args[0]
+
+		if _, err := config.GetRepo(cfg, repoName); err != nil {
+			fmt.Printf("%s Repository '%s' not found\n", red("✗"), repoName)
+			fmt.Println("\nAvailable repositories:")
+			for name := range cfg.Repositories {
+				fmt.Printf("  - %s\n", name)
+			}
+			return errors.ErrRepoNotFound
+		}
+	}
+
 	if cfg.ActiveRepo == repoName {
 		fmt.Printf("%s '%s' is already the active repository\n", green("✓"), repoName)
 		return nil
 	}
 
-	// Change the active one
 	if err := config.SetActiveRepo(cfg, repoName); err != nil {
 		fmt.Printf("%s Error changing active repository: %v\n", red("✗"), err)
 		return err
 	}
 
-	// Save configuration
 	if err := config.Save(cfg); err != nil {
 		fmt.Printf("%s Error saving configuration: %v\n", red("✗"), err)
 		return err
 	}
 
-	fmt.Printf("%s Active repository changed to '%s'\n", green("✓"), repoName)
+	fmt.Printf("%s Active repository changed to '%s'\n", green("✓"), cyan(repoName))
 
 	return nil
 }
@@ -881,4 +915,62 @@ func runRepositoryUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Repository '%s' updated successfully\n", repoName)
 
 	return nil
+}
+
+// selectRepositoryInteractive displays an interactive list to select a repository
+func selectRepositoryInteractive(repos []repositoryItem, labelText string) (*repositoryItem, error) {
+	cyan := color.New(color.FgCyan).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}",
+		Active:   "▸ {{ .Name | cyan }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
+		Inactive: "  {{ .Name | white }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
+		Selected: "{{ \"Selected:\" | green }} {{ .Name | cyan }}",
+		Details: `
+--------- Repository Details ---------
+{{ "Name:" | faint }}	{{ .Name }}{{ if .IsActive }} {{ "★ (active)" | green }}{{ end }}
+{{ "URL:" | faint }}	{{ .URL }}
+{{ "Auth:" | faint }}	{{ .AuthType }}
+{{ "Skills Path:" | faint }}	{{ .SkillsPath }}
+{{ "Local:" | faint }}	{{ if .IsCloned }}{{ "✓ cloned" | green }}{{ else }}{{ "✗ not cloned" | red }}{{ end }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		repo := repos[index]
+		name := repo.Name
+		url := repo.URL
+
+		input = promptui.Styler(promptui.FGBold)(input)
+
+		if name == input || url == input {
+			return true
+		}
+
+		return false
+	}
+
+	prompt := promptui.Select{
+		Label:     fmt.Sprintf("%s (Use ↑/↓ arrows, / to search, Enter to select, Ctrl+C to exit)", cyan(labelText)),
+		Items:     repos,
+		Templates: templates,
+		Size:      10,
+		Searcher:  searcher,
+	}
+
+	fmt.Println()
+	idx, _, err := prompt.Run()
+
+	if err != nil {
+		if err == promptui.ErrInterrupt {
+			fmt.Printf("\n%s Selection cancelled\n", yellow("⚠"))
+			return nil, fmt.Errorf("selection cancelled")
+		}
+		return nil, fmt.Errorf("prompt failed: %w", err)
+	}
+
+	selected := &repos[idx]
+	fmt.Println()
+
+	return selected, nil
 }
