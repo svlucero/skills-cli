@@ -45,6 +45,7 @@ func getColoredHelp() string {
 		EmptyLine().
 		Item(yellow("list [flags]"), "List available or installed skills").
 		Item(yellow("install <skill-name> [flags]"), "Install a skill to a provider").
+		Item(yellow("uninstall <skill-name> [flags]"), "Uninstall a skill from a provider").
 		Item(yellow("share --path <path> [flags]"), "Share a skill via PR").
 		EmptyLine().
 		Item(yellow("help [command]"), "Show help for any command").
@@ -89,6 +90,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(installCmd)
+	rootCmd.AddCommand(uninstallCmd)
 	rootCmd.AddCommand(shareCmd)
 }
 
