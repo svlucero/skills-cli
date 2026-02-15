@@ -124,10 +124,7 @@ func init() {
 
 // initConfig reads the configuration
 func initConfig() {
-	if cfgFile != "" {
-		// If the user specified a config file, use it
-		// For now we don't do anything special with this
-	}
+	// cfgFile is available for future use if custom config file paths are needed
 
 	if verbose {
 		fmt.Println("Verbose mode activated")

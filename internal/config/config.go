@@ -316,8 +316,13 @@ func ValidateRepoName(name string) error {
 
 	// Only allow alphanumeric characters, hyphens and underscores
 	for _, ch := range name {
-		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') || ch == '-' || ch == '_') {
+		isLower := ch >= 'a' && ch <= 'z'
+		isUpper := ch >= 'A' && ch <= 'Z'
+		isDigit := ch >= '0' && ch <= '9'
+		isHyphen := ch == '-'
+		isUnderscore := ch == '_'
+
+		if !isLower && !isUpper && !isDigit && !isHyphen && !isUnderscore {
 			return fmt.Errorf("repository name can only contain letters, numbers, hyphens and underscores")
 		}
 	}

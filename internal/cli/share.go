@@ -68,7 +68,7 @@ var shareCmd = &cobra.Command{
 func init() {
 	shareCmd.Flags().StringVar(&sharePath, "path", "", "path to the skill folder (required)")
 	shareCmd.Flags().StringVar(&shareRepo, "repo", "", "target repository URL (optional, defaults to current)")
-	shareCmd.MarkFlagRequired("path")
+	_ = shareCmd.MarkFlagRequired("path")
 }
 
 func runShare(cmd *cobra.Command, args []string) error {
@@ -185,7 +185,7 @@ func runShare(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s Error creating temporary directory: %v\n", red("✗"), err)
 		return err
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	if err := cloneRepository(forkURL, tempDir); err != nil {
 		fmt.Printf("%s Error cloning fork: %v\n", red("✗"), err)

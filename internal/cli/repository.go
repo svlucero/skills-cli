@@ -42,13 +42,6 @@ func formatError(format string, args ...interface{}) string {
 	return red(msg)
 }
 
-// formatSuccess formats a success message with green color
-func formatSuccess(format string, args ...interface{}) string {
-	green := color.New(color.FgGreen).SprintFunc()
-	msg := fmt.Sprintf(format, args...)
-	return green(msg)
-}
-
 // formatWarning formats a warning message with yellow color
 func formatWarning(format string, args ...interface{}) string {
 	yellow := color.New(color.FgYellow).SprintFunc()

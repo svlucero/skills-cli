@@ -1,4 +1,4 @@
-.PHONY: build install test clean run help
+.PHONY: build install test clean run help fmt lint
 
 # Variables
 BINARY_NAME=skills
@@ -15,6 +15,8 @@ help:
 	@echo "  install    - Install the binary to \$$GOPATH/bin"
 	@echo "  run        - Run the CLI without building"
 	@echo "  test       - Run tests"
+	@echo "  fmt        - Format code with gofmt"
+	@echo "  lint       - Run golangci-lint"
 	@echo "  clean      - Clean generated files"
 	@echo "  help       - Show this help"
 
@@ -53,3 +55,15 @@ build-release:
 	@mkdir -p $(BUILD_DIR)
 	@go build -ldflags="-s -w" -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Release binary built at: $(BUILD_DIR)/$(BINARY_NAME)"
+
+# Format code
+fmt:
+	@echo "Formatting code..."
+	@gofmt -w -s .
+	@echo "Code formatted"
+
+# Run linter
+lint:
+	@echo "Running golangci-lint..."
+	@golangci-lint run
+	@echo "Lint check complete"

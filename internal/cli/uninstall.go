@@ -134,7 +134,7 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s Are you sure you want to uninstall '%s'? [y/N]: ", yellow("?"), skillName)
 
 		var response string
-		fmt.Scanln(&response)
+		_, _ = fmt.Scanln(&response)
 
 		if response != "y" && response != "Y" && response != "yes" && response != "Yes" {
 			fmt.Printf("\n%s Uninstall cancelled\n", yellow("⚠"))

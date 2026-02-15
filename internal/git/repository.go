@@ -34,7 +34,7 @@ func Clone(url, destPath string) error {
 
 	if err := cmd.Run(); err != nil {
 		// Clean up directory if clone failed
-		os.RemoveAll(destPath)
+		_ = os.RemoveAll(destPath)
 		return fmt.Errorf("git clone failed: %w", err)
 	}
 
