@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -18,6 +20,7 @@ var (
 	skipVerify bool
 	setCurrent bool
 	keepLocal  bool
+	skillsPath string
 )
 
 // formatError formats an error message with red color
@@ -87,6 +90,7 @@ func getRepositoryAddHelp() string {
 		Item("-f, --force", "Overwrite existing repository or allow duplicate URLs").
 		Item("--skip-verify", "Skip repository verification (not recommended)").
 		Item("--set-current", "Set this repository as the active one").
+		Item("--skills-path <path>", "Relative path to skills directory (e.g., 'skills', 'examples/claude-skills')").
 		Section("BEHAVIOR:").
 		BulletList([]string{
 			"Validates repository name and URL format",
@@ -211,6 +215,7 @@ func init() {
 	repositoryAddCmd.Flags().BoolVarP(&forceRepo, "force", "f", false, "overwrite existing repository with same name")
 	repositoryAddCmd.Flags().BoolVar(&skipVerify, "skip-verify", false, "skip repository verification (not recommended)")
 	repositoryAddCmd.Flags().BoolVar(&setCurrent, "set-current", false, "set this repository as active")
+	repositoryAddCmd.Flags().StringVar(&skillsPath, "skills-path", "", "relative path to skills directory within repo (e.g., 'skills', 'examples/claude-skills')")
 
 	// Flags for remove
 	repositoryRemoveCmd.Flags().BoolVar(&keepLocal, "keep-local", false, "keep local repository (only remove from config)")
@@ -351,11 +356,58 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s Local repository already exists, using existing\n", green("✓"))
 	}
 
+	// 8.5. Validate skills path if specified
+	if skillsPath != "" {
+		fmt.Printf("Validating skills path...\n")
+
+		// Normalize path (convert backslashes, clean up)
+		skillsPath = filepath.Clean(skillsPath)
+
+		// Ensure it's a relative path
+		if filepath.IsAbs(skillsPath) {
+			fmt.Printf("%s %s\n", red("✗"), formatError("Skills path must be relative, not absolute: %s", skillsPath))
+			return fmt.Errorf("skills path must be relative")
+		}
+
+		// Check if the path exists within the cloned repo
+		fullSkillsPath := filepath.Join(repoPath, skillsPath)
+		if _, err := os.Stat(fullSkillsPath); os.IsNotExist(err) {
+			fmt.Printf("%s %s\n", red("✗"), formatError("Skills path not found in repository: %s", skillsPath))
+			fmt.Printf("  Full path: %s\n", fullSkillsPath)
+			fmt.Println("\nThe specified skills path does not exist in the repository.")
+			fmt.Println("Available directories:")
+
+			// Show available directories as hint
+			entries, _ := os.ReadDir(repoPath)
+			for _, entry := range entries {
+				if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+					fmt.Printf("  - %s\n", entry.Name())
+				}
+			}
+
+			return fmt.Errorf("skills path not found")
+		}
+
+		// Check if path is a directory
+		info, err := os.Stat(fullSkillsPath)
+		if err != nil {
+			fmt.Printf("%s %s\n", red("✗"), formatError("Error accessing skills path: %v", err))
+			return err
+		}
+		if !info.IsDir() {
+			fmt.Printf("%s %s\n", red("✗"), formatError("Skills path is not a directory: %s", skillsPath))
+			return fmt.Errorf("skills path must be a directory")
+		}
+
+		fmt.Printf("%s Skills path validated: %s\n", green("✓"), skillsPath)
+	}
+
 	// 9. Create or update repository in configuration
 	repo := config.Repository{
 		Name:         repoName,
 		URL:          repoURL,
 		LocalPath:    repoPath,
+		SkillsPath:   skillsPath,
 		LastVerified: time.Now(),
 		AuthType:     string(authType),
 	}
@@ -404,6 +456,9 @@ func runRepositoryAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Repository: %s\n", repoName)
+	if skillsPath != "" {
+		fmt.Printf("Skills Path: %s\n", skillsPath)
+	}
 	if cfg.ActiveRepo == repoName {
 		fmt.Printf("Status: %s\n", green("active"))
 	} else {
@@ -460,6 +515,13 @@ func runRepositoryList(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s%s%s\n", activeMarker, name, activeSuffix)
 		fmt.Printf("    URL:   %s\n", repo.URL)
 		fmt.Printf("    Auth:  %s\n", repo.AuthType)
+
+		// Show skills path (default to "/" for root)
+		skillsDisplay := repo.SkillsPath
+		if skillsDisplay == "" {
+			skillsDisplay = "/"
+		}
+		fmt.Printf("    Skills: %s\n", skillsDisplay)
 
 		// Local repo status
 		if git.RepoExists(repo.LocalPath) {

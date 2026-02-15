@@ -195,6 +195,14 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\n%s%s\n", activeMarker, cyan(name))
 		fmt.Printf("    URL:            %s\n", repo.URL)
 		fmt.Printf("    Local Path:     %s\n", repo.LocalPath)
+
+		// Show skills path (default to "/" for root)
+		skillsDisplay := repo.SkillsPath
+		if skillsDisplay == "" {
+			skillsDisplay = "/"
+		}
+		fmt.Printf("    Skills Path:    %s\n", skillsDisplay)
+
 		fmt.Printf("    Auth Type:      %s\n", repo.AuthType)
 		fmt.Printf("    Last Verified:  %s\n", repo.LastVerified.Format("2006-01-02 15:04:05"))
 

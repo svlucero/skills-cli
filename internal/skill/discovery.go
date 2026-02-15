@@ -18,16 +18,27 @@ const (
 )
 
 // DiscoverSkills scans all directories in a local repository as potential skills
-func DiscoverSkills(repoPath, repoName string) ([]Skill, error) {
+func DiscoverSkills(repoPath, repoName, skillsPath string) ([]Skill, error) {
 	// Check if repository path exists
 	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("repository path not found: %s", repoPath)
 	}
 
-	// Read all directories in the repository root
-	entries, err := os.ReadDir(repoPath)
+	// Combine repoPath with skillsPath
+	scanPath := repoPath
+	if skillsPath != "" {
+		scanPath = filepath.Join(repoPath, skillsPath)
+
+		// Validate that skills path exists
+		if _, err := os.Stat(scanPath); os.IsNotExist(err) {
+			return nil, fmt.Errorf("skills path not found: %s (full path: %s)", skillsPath, scanPath)
+		}
+	}
+
+	// Read all directories in the skills directory
+	entries, err := os.ReadDir(scanPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading repository directory: %w", err)
+		return nil, fmt.Errorf("error reading skills directory: %w", err)
 	}
 
 	var skills []Skill
@@ -44,7 +55,7 @@ func DiscoverSkills(repoPath, repoName string) ([]Skill, error) {
 			continue
 		}
 
-		skillPath := filepath.Join(repoPath, skillName)
+		skillPath := filepath.Join(scanPath, skillName)
 
 		// Check if SKILL.md exists - this marks a directory as a skill
 		markerPath := filepath.Join(skillPath, skillMarkerName)
@@ -220,7 +231,7 @@ func GetSkillsFromRepo(cfg *config.Config, repoName string) ([]Skill, error) {
 		return nil, fmt.Errorf("repository '%s' not cloned locally\nRun 'skill repository add %s %s' to clone it", repoName, repoName, repo.URL)
 	}
 
-	return DiscoverSkills(repo.LocalPath, repoName)
+	return DiscoverSkills(repo.LocalPath, repoName, repo.SkillsPath)
 }
 
 // GetAllSkills gets all skills from all repositories
