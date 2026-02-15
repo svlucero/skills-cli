@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	installRepo        string
-	installProvider    string
-	installForce       bool
+	installRepo         string
+	installProvider     string
+	installForce        bool
 	installSkipExisting bool
 )
 

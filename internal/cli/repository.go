@@ -25,13 +25,13 @@ var (
 
 // repositoryItem represents a repository for interactive display
 type repositoryItem struct {
-	Name        string
-	URL         string
-	AuthType    string
-	SkillsPath  string
-	IsActive    bool
-	IsCloned    bool
-	LocalPath   string
+	Name       string
+	URL        string
+	AuthType   string
+	SkillsPath string
+	IsActive   bool
+	IsCloned   bool
+	LocalPath  string
 }
 
 // formatError formats an error message with red color
@@ -567,8 +567,8 @@ func runRepositoryList(cmd *cobra.Command, args []string) error {
 	}
 
 	templates := &promptui.SelectTemplates{
-		Label: "{{ . }}",
-		Active: "▸ {{ .Name | cyan }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
+		Label:    "{{ . }}",
+		Active:   "▸ {{ .Name | cyan }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
 		Inactive: "  {{ .Name | white }} {{ if .IsActive }}{{ \"★\" | green }}{{ end }}",
 		Selected: "{{ \"Selected:\" | green }} {{ .Name | cyan }}",
 		Details: `

@@ -14,7 +14,7 @@ type VerificationLevel int
 
 const (
 	LevelBasic VerificationLevel = iota // ls-remote only
-	LevelClone                           // Full test clone
+	LevelClone                          // Full test clone
 )
 
 // VerifyBasic verifies that the repository is accessible using git ls-remote
