@@ -67,13 +67,24 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Pre-releases
 
-For pre-release versions, use suffixes:
+For pre-release versions, use suffixes with proper semver format:
 
 ```bash
+# Release candidates (CORRECT format with dash and dot)
 git tag -a v0.2.0-rc.1 -m "Release candidate 1"
+git tag -a v0.2.0-rc.2 -m "Release candidate 2"
+
+# Beta releases
 git tag -a v0.2.0-beta.1 -m "Beta release 1"
+git tag -a v0.2.0-beta.2 -m "Beta release 2"
+
+# Alpha releases
 git tag -a v0.2.0-alpha.1 -m "Alpha release 1"
 ```
+
+**⚠️ Important**: Pre-release tags MUST follow this format:
+- ✅ CORRECT: `v0.2.0-rc.1`, `v1.0.0-beta.1`, `v2.0.0-alpha.1`
+- ❌ WRONG: `v0.2.0rc1`, `v1.0.0beta`, `v2.0.0-rc` (missing version number after dash)
 
 ## What GoReleaser Does
 
