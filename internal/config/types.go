@@ -16,6 +16,7 @@ type Repository struct {
 	Name         string    `yaml:"name"`
 	URL          string    `yaml:"url"`
 	LocalPath    string    `yaml:"local_path"`
+	SkillsPath   string    `yaml:"skills_path,omitempty"`
 	LastVerified time.Time `yaml:"last_verified"`
 	AuthType     string    `yaml:"auth_type"` // "https" or "ssh"
 }
