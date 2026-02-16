@@ -27,8 +27,20 @@ jobs:
       - name: Clean
         run: go clean -testcache -cache
 
-      - name: Run tests
+      - name: Remove .out directory (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path .out) { Remove-Item -Recurse -Force .out }
+          if (Test-Path coverage.out) { Remove-Item -Force coverage.out }
+
+      - name: Run tests (with coverage)
+        if: runner.os != 'Windows'
         run: go test -v -race -coverprofile=coverage.out ./cmd/... ./internal/...
+
+      - name: Run tests (without coverage on Windows)
+        if: runner.os == 'Windows'
+        run: go test -v -race ./cmd/... ./internal/...
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest'
