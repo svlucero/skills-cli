@@ -1,54 +1,12 @@
 package cli
 
 import (
-	"bytes"
-	"io"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/spf13/cobra"
 )
-
-func setupTestConfig(t *testing.T) (string, func()) {
-	tmpDir := t.TempDir()
-
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	configContent := `active_repository: ""
-repositories: {}
-`
-
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatalf("Failed to create test config: %v", err)
-	}
-
-	oldConfigPath := os.Getenv("SKILL_CONFIG")
-	os.Setenv("SKILL_CONFIG", configPath)
-
-	cleanup := func() {
-		os.Setenv("SKILL_CONFIG", oldConfigPath)
-	}
-
-	return configPath, cleanup
-}
-
-func captureOutput(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
-}
 
 func TestValidateRepoName(t *testing.T) {
 	tests := []struct {
