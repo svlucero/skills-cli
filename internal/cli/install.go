@@ -10,6 +10,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/silvinalucero/skill_cli/internal/config"
 	"github.com/silvinalucero/skill_cli/internal/errors"
+	"github.com/silvinalucero/skill_cli/internal/git"
 	"github.com/silvinalucero/skill_cli/internal/skill"
 	"github.com/spf13/cobra"
 )
@@ -127,9 +128,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Verify repository exists
-	if _, err := config.GetRepo(cfg, repoName); err != nil {
+	repo, err := config.GetRepo(cfg, repoName)
+	if err != nil {
 		fmt.Printf("%s Repository '%s' not found\n", red("✗"), repoName)
 		return errors.ErrRepoNotFound
+	}
+
+	// Update repository before installing
+	fmt.Printf("%s Updating repository '%s'...\n", cyan("→"), repoName)
+	if err := git.Pull(repo.LocalPath); err != nil {
+		fmt.Printf("%s Warning: could not update repository: %v\n", yellow("⚠"), err)
+		fmt.Println("  Continuing with local version...")
+	} else {
+		fmt.Printf("%s Repository updated\n", green("✓"))
 	}
 
 	// Get all skills from the repository
