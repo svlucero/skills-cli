@@ -13,7 +13,6 @@
 ## 📖 Table of Contents
 
 - [Overview](#overview)
-- [Demo](#demo)
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -35,13 +34,6 @@
 Skills are self-contained directories with a standardized structure, making them easy to share, install, and manage across projects and teams.
 
 > 💡 **Ready to use!** Pre-built binaries are available for Linux, macOS, and Windows. No compilation needed - just [download and run](https://github.com/svlucero/skills-cli/releases/latest)!
-
-## Demo
-
-<!-- Replace this comment with your demo GIF -->
-<!-- ![Demo](assets/demo.gif) -->
-
-**Demo coming soon!** - A GIF demonstration of the interactive features will be added here.
 
 ## Features
 
